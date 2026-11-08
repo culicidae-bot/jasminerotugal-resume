@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   listPublicMediaInventoryWithClient,
+  loadPortfolioDraftWithClient,
   loadPendingPublicAssetCleanupWithClient,
   mergePublishedPortfolioContent,
   movePublicMediaToPrivateWithClient,
@@ -9,6 +10,7 @@ import {
   resolvePortfolioAssetUrl,
   retryPublicAssetCleanupWithClient,
   savePortfolioDesignWithClient,
+  savePortfolioDraftWithClient,
   unpublishPortfolioContentWithClient,
   uploadPortfolioAssetWithClient,
   validatePublishedAssetReferencesWithClient,
@@ -175,6 +177,49 @@ test('legacy published template instructions are never merged into public conten
   assert.doesNotMatch(JSON.stringify(merged), /\[TODO:|edit the source files/i);
 });
 
+test('saved profile and null education values load into the admin form', () => {
+  const savedContent = {
+    hero: { name: 'Updated Jasmine' },
+    contact: { email: 'jasmine@example.org' },
+    education: {
+      tertiary: { institution: 'Updated University', yearGraduated: '2027' },
+      secondary: { institution: 'Secondary School' },
+      elementary: { institution: 'Elementary School' },
+    },
+  };
+  const merged = mergePublishedPortfolioContent(content, savedContent);
+
+  assert.equal(merged.hero.name, 'Updated Jasmine');
+  assert.equal(merged.contact.email, 'jasmine@example.org');
+  assert.equal(merged.education.tertiary.institution, 'Updated University');
+  assert.equal(merged.education.tertiary.yearGraduated, '2027');
+  assert.equal(merged.education.secondary.institution, 'Secondary School');
+});
+
+test('Save Draft persists edits for reload without changing published content', async () => {
+  const publishedValue = JSON.stringify({ hero: { name: 'Public Name' } });
+  const client = createStorageClient([
+    { key: 'portfolio_content', value: publishedValue, published: true },
+  ]);
+  const edited = {
+    ...content,
+    hero: { ...content.hero, name: 'Draft Name' },
+    education: {
+      ...content.education,
+      tertiary: { ...content.education.tertiary, yearGraduated: '2027' },
+    },
+  };
+
+  await savePortfolioDraftWithClient(client, edited);
+  const loaded = await loadPortfolioDraftWithClient(client);
+
+  assert.equal(loaded.content.hero.name, 'Draft Name');
+  assert.equal(loaded.content.education.tertiary.yearGraduated, '2027');
+  assert.equal(loaded.published, true);
+  assert.equal(client.settings.find((row) => row.key === 'portfolio_content').value, publishedValue);
+  assert.equal(client.settings.find((row) => row.key === 'portfolio_content_draft').published, false);
+});
+
 test('new asset uploads stay private and draft previews use short-lived signed URLs', async () => {
   const client = createStorageClient();
   const file = new Blob(['image bytes'], { type: 'image/png' });
@@ -212,6 +257,46 @@ test('publishing copies only referenced originals and stores public URLs in publ
   assert.ok(!row.value.includes('originals:'));
   assert.equal(draftRow.published, false);
   assert.equal(JSON.parse(draftRow.value).resumePath, reference);
+});
+
+test('Publish updates edited profile, certificate, education, and project records', async () => {
+  const client = createStorageClient();
+  const assets = ['portrait.webp', 'certificate.pdf', 'project-1.png', 'project-2.png'];
+  assets.forEach((name) => {
+    client.objects.set(`originals/portfolio/${name}`, new Blob([name], { type: 'application/octet-stream' }));
+  });
+  const edited = {
+    hero: { name: 'Updated Jasmine', portrait: { src: 'originals:portfolio/portrait.webp' } },
+    contact: { email: 'jasmine@example.org' },
+    education: { tertiary: { institution: 'Updated University', yearGraduated: '2027' } },
+    certificates: [{
+      id: 'certificate-1',
+      title: 'Updated Network Certificate',
+      issuer: 'Verified Issuer',
+      publicFile: { src: 'originals:portfolio/certificate.pdf' },
+    }],
+    projects: [{
+      id: 'project-1',
+      title: 'Updated Network Project',
+      screenshots: [
+        { src: 'originals:portfolio/project-1.png' },
+        { src: 'originals:portfolio/project-2.png' },
+      ],
+    }],
+  };
+
+  const { content: published } = await publishPortfolioContentWithClient(client, edited);
+  const publishedRow = client.settings.find((row) => row.key === 'portfolio_content');
+
+  assert.equal(published.hero.name, 'Updated Jasmine');
+  assert.equal(published.education.tertiary.institution, 'Updated University');
+  assert.equal(published.education.tertiary.yearGraduated, '2027');
+  assert.equal(published.certificates[0].title, 'Updated Network Certificate');
+  assert.equal(published.projects[0].title, 'Updated Network Project');
+  assert.match(published.certificates[0].publicFile.src, /\/public\/public-media\//);
+  assert.ok(published.projects.every((project) => project.screenshots.every((image) => image.src.includes('/public/public-media/'))));
+  assert.equal(publishedRow.published, true);
+  assert.equal(JSON.parse(client.settings.find((row) => row.key === 'portfolio_content_draft').value).hero.portrait.src, 'originals:portfolio/portrait.webp');
 });
 
 test('unpublishing deletes unused public copies but preserves assets shared by a published design', async () => {

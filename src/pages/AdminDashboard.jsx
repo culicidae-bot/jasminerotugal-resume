@@ -1,8 +1,14 @@
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { designSettings as defaultDesign, presets } from '../data/design.js';
 import { useSite } from '../lib/site-context.js';
 import '../admin.css';
 import { applyDesignTokens, normalizeDatabaseDesign } from '../lib/design-settings.js';
+import {
+  applyRecordEdit,
+  beginRecordEdit,
+  cancelRecordEdit,
+  updateRecordEdit,
+} from '../lib/admin-records.js';
 import {
   loadPortfolioDraft,
   loadPendingPublicAssetCleanupWithClient,
@@ -149,51 +155,193 @@ function RecordListEditor({
   onUploadError,
   allowScreenshots = false,
   allowCertificateFile = false,
+  onEditingChange = () => {},
 }) {
-  const records = readPath(draft, path);
-
-  function updateRecord(index, key, value) {
-    const next = [...records];
-    next[index] = { ...next[index], [key]: value };
-    onChange(updatePath(draft, path, next));
-  }
+  const records = readPath(draft, path) || [];
+  const [editing, setEditing] = useState(null);
 
   function addRecord() {
     const record = { id: crypto.randomUUID() };
     for (const field of fields) record[field.key] = field.type === 'lines' ? [] : '';
     if (allowScreenshots) record.screenshots = [];
-    onChange(updatePath(draft, path, [...records, record]));
+    setEditing({ key: `new:${record.id}`, index: records.length, original: null, value: record });
+    onEditingChange(path, true);
   }
 
-  function removeRecord(index) {
-    onChange(updatePath(draft, path, records.filter((_, position) => position !== index)));
+  function startEditing(record, index) {
+    setEditing(beginRecordEdit(record, record.id ? `id:${record.id}` : `index:${index}`, index));
+    onEditingChange(path, true);
   }
 
-  async function addScreenshots(index, files) {
+  function updateField(key, value) {
+    setEditing((current) => updateRecordEdit(current, key, value));
+  }
+
+  function updateScreenshots(editKey, images) {
+    setEditing((current) => current?.key === editKey
+      ? { ...current, value: { ...current.value, screenshots: [...(current.value.screenshots || []), ...images] } }
+      : current);
+  }
+
+  function commitEdit() {
+    try {
+      const nextRecords = applyRecordEdit(records, editing);
+      onChange((current) => updatePath(current, path, nextRecords));
+      setEditing(null);
+      onEditingChange(path, false);
+    } catch (error) {
+      onUploadError(error.message);
+    }
+  }
+
+  function cancelEdit() {
+    setEditing(cancelRecordEdit(editing));
+    onEditingChange(path, false);
+  }
+
+  function removeRecord(record, index) {
+    const key = record.id ? `id:${record.id}` : `index:${index}`;
+    if (editing?.key === key) cancelEdit();
+    onChange((current) => updatePath(
+      current,
+      path,
+      (readPath(current, path) || []).filter((_, position) => position !== index),
+    ));
+  }
+
+  async function addScreenshots(editKey, title, files) {
     const newImages = [];
     for (const file of Array.from(files)) {
       const src = await uploadPortfolioAsset(file);
       newImages.push({
         src,
-        alt: `Screenshot of ${records[index].title || 'project'}`,
+        alt: `Screenshot of ${title || 'project'}`,
         width: 1440,
         height: 900,
         focalPoint: 'center',
         loading: 'lazy',
       });
     }
-    updateRecord(index, 'screenshots', [...(records[index].screenshots || []), ...newImages]);
+    updateScreenshots(editKey, newImages);
   }
 
-  async function addCertificateFile(index, file) {
+  async function addCertificateFile(editKey, title, file) {
     const src = await uploadPortfolioAsset(file, { kind: 'certificate' });
-    updateRecord(index, 'publicFile', {
-      src,
-      alt: `${records[index].title || 'Certificate'} document`,
-      width: 1200,
-      height: 1600,
-      mimeType: file.type,
-    });
+    setEditing((current) => current?.key === editKey ? {
+      ...current,
+      value: {
+        ...current.value,
+        publicFile: {
+          src,
+          alt: `${title || 'Certificate'} document`,
+          width: 1200,
+          height: 1600,
+          mimeType: file.type,
+        },
+      },
+    } : current);
+  }
+
+  useEffect(() => () => onEditingChange(path, false), [onEditingChange, path]);
+
+  function renderAssetReferences(record) {
+    return (
+      <>
+        {record.publicFile?.src ? <p><DraftAssetLink src={record.publicFile.src}>Open uploaded document</DraftAssetLink></p> : null}
+        {(record.screenshots || []).map((image, imageIndex) => (
+          <p key={`${image.src}-${imageIndex}`}><DraftAssetLink src={image.src}>Screenshot {imageIndex + 1}</DraftAssetLink></p>
+        ))}
+      </>
+    );
+  }
+
+  function renderEditForm(value, key) {
+    return (
+      <>
+        <div className="admin-form-grid">
+          {fields.map((field) => {
+            const fieldValue = value[field.key];
+            const shownValue = field.type === 'lines' ? (Array.isArray(fieldValue) ? fieldValue.join('\n') : '') : fieldValue;
+            return (
+              <TextField
+                key={field.key}
+                label={field.label}
+                type={field.type === 'number' || field.type === 'date' ? field.type : 'text'}
+                multiline={field.type === 'lines' || field.key === 'summary' || field.key === 'purpose'}
+                value={shownValue}
+                onChange={(nextValue) => {
+                  const parsedValue = field.type === 'lines'
+                    ? nextValue.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
+                    : field.type === 'number'
+                      ? Math.min(100, Math.max(0, Number(nextValue) || 0))
+                      : nextValue;
+                  updateField(field.key, parsedValue);
+                }}
+              />
+            );
+          })}
+        </div>
+        {allowScreenshots ? (
+          <div className="admin-field">
+            <label htmlFor={`project-images-${key}`}>Project screenshots</label>
+            <input
+              id={`project-images-${key}`}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              onChange={(event) => {
+                if (event.target.files?.length) {
+                  addScreenshots(key, value.title, event.target.files).catch((error) => onUploadError(error.message));
+                }
+                event.target.value = '';
+              }}
+            />
+            <small>{(value.screenshots || []).length} uploaded; add at least 2 screenshots for each project.</small>
+            {(value.screenshots || []).map((image, imageIndex) => (
+              <p key={`${image.src}-${imageIndex}`}>
+                <DraftAssetLink src={image.src}>Screenshot {imageIndex + 1}</DraftAssetLink>
+                {' · '}
+                <button
+                  className="text-button"
+                  type="button"
+                  onClick={() => updateField('screenshots', value.screenshots.filter((_, position) => position !== imageIndex))}
+                >
+                  Remove
+                </button>
+              </p>
+            ))}
+          </div>
+        ) : null}
+        {allowCertificateFile ? (
+          <div className="admin-field">
+            <label htmlFor={`certificate-file-${key}`}>Certificate image or PDF</label>
+            <input
+              id={`certificate-file-${key}`}
+              type="file"
+              accept="application/pdf,image/jpeg,image/png,image/webp"
+              onChange={(event) => {
+                if (event.target.files?.[0]) {
+                  addCertificateFile(key, value.title, event.target.files[0])
+                    .catch((error) => onUploadError(error.message));
+                }
+                event.target.value = '';
+              }}
+            />
+            {value.publicFile?.src ? (
+              <p>
+                <DraftAssetLink src={value.publicFile.src}>Open uploaded document</DraftAssetLink>
+                {' · '}
+                <button className="text-button" type="button" onClick={() => updateField('publicFile', null)}>Remove file</button>
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+        <div className="admin-form-actions">
+          <button className="admin-button admin-button-primary" type="button" onClick={commitEdit}>Update</button>
+          <button className="admin-button" type="button" onClick={cancelEdit}>Cancel</button>
+        </div>
+      </>
+    );
   }
 
   return (
@@ -203,100 +351,51 @@ function RecordListEditor({
           <h2>{title}</h2>
           <p>Unpublished records stay hidden from recruiters.</p>
         </div>
-        <button className="admin-button" type="button" onClick={addRecord}>Add {title.toLowerCase()}</button>
+        <button className="admin-button" type="button" disabled={Boolean(editing)} onClick={addRecord}>
+          Add {title.toLowerCase()}
+        </button>
       </div>
-      {records.length === 0 ? <p className="admin-empty">No entries yet. Add one when you are ready.</p> : null}
+      {records.length === 0 && !editing ? <p className="admin-empty">No entries yet. Add one when you are ready.</p> : null}
       <div className="record-list">
-        {records.map((record, index) => (
-          <fieldset className="record-card" key={record.id || `${path}-${index}`}>
-            <legend>{record.title || `${title} ${index + 1}`}</legend>
-            <div className="admin-form-grid">
-              {fields.map((field) => {
-                const value = record[field.key];
-                const shownValue = field.type === 'lines' ? (Array.isArray(value) ? value.join('\n') : '') : value;
-                return (
-                  <TextField
-                    key={field.key}
-                    label={field.label}
-                    type={field.type === 'number' || field.type === 'date' ? field.type : 'text'}
-                    multiline={field.type === 'lines' || field.key === 'summary' || field.key === 'purpose'}
-                    value={shownValue}
-                    onChange={(nextValue) => {
-                      const parsedValue = field.type === 'lines'
-                        ? nextValue.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
-                        : field.type === 'number'
-                          ? Math.min(100, Math.max(0, Number(nextValue) || 0))
-                          : nextValue;
-                      updateRecord(index, field.key, parsedValue);
-                    }}
-                  />
-                );
-              })}
-            </div>
-            {allowScreenshots ? (
-              <div className="admin-field">
-                <label htmlFor={`project-images-${index}`}>Project screenshots</label>
-                <input
-                  id={`project-images-${index}`}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  multiple
-                  onChange={(event) => {
-                    if (event.target.files?.length) {
-                      addScreenshots(index, event.target.files).catch((error) => {
-                        onUploadError(error.message);
-                      });
-                    }
-                    event.target.value = '';
-                  }}
-                />
-                <small>{(record.screenshots || []).length} uploaded; add at least 2 screenshots for each project.</small>
-                {(record.screenshots || []).length ? (
-                  <ul className="uploaded-file-list">
-                    {record.screenshots.map((image, imageIndex) => (
-                      <li key={`${image.src}-${imageIndex}`}>
-                        <DraftAssetLink src={image.src}>Screenshot {imageIndex + 1}</DraftAssetLink>
-                        <button
-                          className="text-button"
-                          type="button"
-                          onClick={() => updateRecord(index, 'screenshots', record.screenshots.filter((_, position) => position !== imageIndex))}
-                        >
-                          Remove
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-                {allowCertificateFile ? (
-                  <div className="admin-field">
-                    <label htmlFor={`certificate-file-${index}`}>Certificate image or PDF</label>
-                    <input
-                      id={`certificate-file-${index}`}
-                      type="file"
-                      accept="application/pdf,image/jpeg,image/png,image/webp"
-                      onChange={(event) => {
-                        if (event.target.files?.[0]) {
-                          addCertificateFile(index, event.target.files[0]).catch((error) => onUploadError(error.message));
-                        }
-                        event.target.value = '';
-                      }}
-                    />
-                    {record.publicFile?.src ? (
-                      <p>
-                        <DraftAssetLink src={record.publicFile.src}>Open uploaded document</DraftAssetLink>
-                        {' · '}
-                        <button className="text-button" type="button" onClick={() => updateRecord(index, 'publicFile', null)}>Remove file</button>
-                      </p>
-                    ) : null}
+        {records.map((record, index) => {
+          const key = record.id ? `id:${record.id}` : `index:${index}`;
+          const isEditing = editing?.key === key;
+          const value = isEditing ? editing.value : record;
+          return (
+            <fieldset className="record-card" key={key}>
+              <legend>{value.title || `${title} ${index + 1}`}</legend>
+              {isEditing ? (
+                renderEditForm(value, key)
+              ) : (
+                <>
+                  <dl className="admin-record-summary">
+                    {fields.map((field) => {
+                      const fieldValue = record[field.key];
+                      const textValue = Array.isArray(fieldValue) ? fieldValue.join(', ') : fieldValue;
+                      return textValue ? (
+                        <div key={field.key}>
+                          <dt>{field.label}</dt>
+                          <dd>{textValue}</dd>
+                        </div>
+                      ) : null;
+                    })}
+                  </dl>
+                  {renderAssetReferences(record)}
+                  <div className="admin-form-actions">
+                    <button className="admin-button" type="button" onClick={() => startEditing(record, index)}>Edit</button>
+                    <button className="admin-button admin-button-danger" type="button" onClick={() => removeRecord(record, index)}>Remove entry</button>
                   </div>
-                ) : null}
-              </div>
-            ) : null}
-            <button className="admin-button admin-button-danger" type="button" onClick={() => removeRecord(index)}>
-              Remove entry
-            </button>
+                </>
+              )}
+            </fieldset>
+          );
+        })}
+        {editing && !editing.original ? (
+          <fieldset className="record-card" key={editing.key}>
+            <legend>{editing.value.title || `${title} ${records.length + 1}`}</legend>
+            {renderEditForm(editing.value, editing.key)}
           </fieldset>
-        ))}
+        ) : null}
       </div>
     </section>
   );
@@ -306,6 +405,9 @@ export default function AdminDashboard({ onLogout }) {
   const site = useSite();
   const { content, design, onPublishedContentChange, onDesignChange } = site;
   const [draft, setDraft] = useState(() => clone(content));
+  const [savedDraft, setSavedDraft] = useState(() => clone(content));
+  const [editRevision, setEditRevision] = useState(0);
+  const [openRecordEditors, setOpenRecordEditors] = useState({});
   const [designDraft, setDesignDraft] = useState(() => ({
     theme_mode: design.activePreset || defaultDesign.activePreset,
     font_scale: design.typography?.scale || defaultDesign.typography.scale,
@@ -327,13 +429,19 @@ export default function AdminDashboard({ onLogout }) {
   const [cleanupPaths, setCleanupPaths] = useState([]);
 
   const preset = useMemo(() => presets[designDraft.theme_mode] || presets['graphite-violet'], [designDraft.theme_mode]);
+  const hasUncommittedRecordEdit = Object.values(openRecordEditors).some(Boolean);
+  const reportRecordEditing = useCallback((path, isOpen) => {
+    setOpenRecordEditors((current) => ({ ...current, [path]: isOpen }));
+  }, []);
 
   useEffect(() => {
     let active = true;
     Promise.all([loadPortfolioDraft(), loadPendingPublicAssetCleanupWithClient()])
       .then(([{ content: saved, published, cleanupNeeded }, pendingCleanupPaths]) => {
         if (!active) return;
-        if (saved) setDraft((current) => mergePublishedPortfolioContent(current, saved));
+        const loadedDraft = saved ? mergePublishedPortfolioContent(content, saved) : clone(content);
+        setDraft(loadedDraft);
+        setSavedDraft(clone(loadedDraft));
         setIsPublished(published);
         setCleanupPaths(pendingCleanupPaths);
         setNeedsAssetCleanup(cleanupNeeded || pendingCleanupPaths.length > 0);
@@ -364,10 +472,15 @@ export default function AdminDashboard({ onLogout }) {
   }, [onLogout]);
 
   async function saveDraft() {
+    if (hasUncommittedRecordEdit) {
+      setStatus('Update or cancel the open record before saving the draft.');
+      return;
+    }
     setBusy(true);
     setStatus('');
     try {
       await savePortfolioDraft(draft);
+      setSavedDraft(clone(draft));
       setStatus(
         isPublished
           ? 'Draft saved. Your current published portfolio remains visible until you publish or unpublish.'
@@ -381,6 +494,10 @@ export default function AdminDashboard({ onLogout }) {
   }
 
   async function publish() {
+    if (hasUncommittedRecordEdit) {
+      setStatus('Update or cancel the open record before publishing.');
+      return;
+    }
     const incompleteProject = draft.projects.find(
       (project) => !Array.isArray(project.screenshots) || project.screenshots.length < 2,
     );
@@ -395,6 +512,7 @@ export default function AdminDashboard({ onLogout }) {
     try {
       const { content: publishedContent, warnings, cleanupCandidates } =
         await publishPortfolioContent(draft);
+      setSavedDraft(clone(draft));
       setIsPublished(true);
       onPublishedContentChange(publishedContent);
       setCleanupPaths(cleanupCandidates);
@@ -418,6 +536,7 @@ export default function AdminDashboard({ onLogout }) {
       const { cleanupError, content: privateDraft, cleanupCandidates, retainedPaths } =
         await unpublishPortfolioContent();
       if (privateDraft) setDraft(privateDraft);
+      if (privateDraft) setSavedDraft(clone(privateDraft));
       setIsPublished(false);
       setCleanupPaths(cleanupCandidates);
       setNeedsAssetCleanup(Boolean(cleanupError) || cleanupCandidates.length > 0);
@@ -533,6 +652,13 @@ export default function AdminDashboard({ onLogout }) {
     }));
   }
 
+  function discardContentEdits() {
+    setDraft(clone(savedDraft));
+    setEditRevision((current) => current + 1);
+    setOpenRecordEditors({});
+    setStatus('Unsaved portfolio edits were discarded.');
+  }
+
   return (
     <main className="admin-dashboard">
       <header className="admin-dashboard-header">
@@ -626,25 +752,26 @@ export default function AdminDashboard({ onLogout }) {
       ) : null}
 
       {activeTab === 'skills' ? (
-        <RecordListEditor title="Skills" path="skills" draft={draft} fields={listFields.skills} onChange={setDraft} onUploadError={setStatus} />
+        <RecordListEditor key={`skills-${editRevision}`} title="Skills" path="skills" draft={draft} fields={listFields.skills} onChange={setDraft} onUploadError={setStatus} onEditingChange={reportRecordEditing} />
       ) : null}
       {activeTab === 'certificates' ? (
-        <RecordListEditor title="Certificates and achievements" path="certificates" draft={draft} fields={listFields.certificates} onChange={setDraft} onUploadError={setStatus} allowCertificateFile />
+        <RecordListEditor key={`certificates-${editRevision}`} title="Certificates and achievements" path="certificates" draft={draft} fields={listFields.certificates} onChange={setDraft} onUploadError={setStatus} onEditingChange={reportRecordEditing} allowCertificateFile />
       ) : null}
       {activeTab === 'eligibility' ? (
-        <RecordListEditor title="Eligibility records" path="eligibility" draft={draft} fields={listFields.eligibility} onChange={setDraft} onUploadError={setStatus} />
+        <RecordListEditor key={`eligibility-${editRevision}`} title="Eligibility records" path="eligibility" draft={draft} fields={listFields.eligibility} onChange={setDraft} onUploadError={setStatus} onEditingChange={reportRecordEditing} />
       ) : null}
       {activeTab === 'experience' ? (
         <div className="editor-stack">
           {['work', 'internship', 'volunteer'].map((category) => (
             <RecordListEditor
-              key={category}
+              key={`${category}-${editRevision}`}
               title={`${category[0].toUpperCase()}${category.slice(1)} experience`}
               path={`experience.${category}`}
               draft={draft}
               fields={listFields.experience}
               onChange={setDraft}
               onUploadError={setStatus}
+              onEditingChange={reportRecordEditing}
             />
           ))}
         </div>
@@ -670,7 +797,7 @@ export default function AdminDashboard({ onLogout }) {
         </section>
       ) : null}
       {activeTab === 'projects' ? (
-        <RecordListEditor title="Projects" path="projects" draft={draft} fields={listFields.projects} onChange={setDraft} onUploadError={setStatus} allowScreenshots />
+        <RecordListEditor key={`projects-${editRevision}`} title="Projects" path="projects" draft={draft} fields={listFields.projects} onChange={setDraft} onUploadError={setStatus} onEditingChange={reportRecordEditing} allowScreenshots />
       ) : null}
       {activeTab === 'design' ? (
         <section className="editor-section">
@@ -751,6 +878,7 @@ export default function AdminDashboard({ onLogout }) {
         <footer className="admin-publish-bar">
           <p>{isPublished ? 'Your portfolio is published. Draft edits are not public until you publish.' : 'Your current edits are a private draft.'}</p>
           <div>
+            <button className="admin-button" type="button" disabled={busy} onClick={discardContentEdits}>Discard edits</button>
             <button className="admin-button" type="button" disabled={busy} onClick={saveDraft}>Save draft</button>
             <button className="admin-button admin-button-primary" type="button" disabled={busy} onClick={publish}>Publish to recruiters</button>
             {isPublished ? <button className="admin-button admin-button-danger" type="button" disabled={busy} onClick={unpublish}>Unpublish</button> : null}

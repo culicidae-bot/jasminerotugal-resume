@@ -67,6 +67,11 @@ function sanitizeTemplateText(value) {
 
 function mergeContent(base, override) {
   if (Array.isArray(base)) return Array.isArray(override) ? override : base;
+  if (base === null) {
+    return override === null || ['string', 'number', 'boolean'].includes(typeof override)
+      ? override
+      : base;
+  }
   if (!base || typeof base !== 'object') {
     return typeof override === typeof base ? override : base;
   }
@@ -483,8 +488,7 @@ export async function loadPublishedPortfolioContent() {
   }
 }
 
-export async function loadPortfolioDraft() {
-  const client = getSupabaseClient();
+export async function loadPortfolioDraftWithClient(client) {
   if (!client) throw new Error('Supabase is not configured.');
 
   const { data, error } = await client
@@ -513,8 +517,11 @@ export async function loadPortfolioDraft() {
   }
 }
 
-export async function savePortfolioDraft(content) {
-  const client = getSupabaseClient();
+export async function loadPortfolioDraft() {
+  return loadPortfolioDraftWithClient(getSupabaseClient());
+}
+
+export async function savePortfolioDraftWithClient(client, content) {
   if (!client) throw new Error('Supabase is not configured.');
 
   const { error } = await client.from('site_settings').upsert(
@@ -527,6 +534,10 @@ export async function savePortfolioDraft(content) {
   );
 
   if (error) throw error;
+}
+
+export async function savePortfolioDraft(content) {
+  return savePortfolioDraftWithClient(getSupabaseClient(), content);
 }
 
 export async function publishPortfolioContentWithClient(client, content) {
