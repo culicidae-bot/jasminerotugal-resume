@@ -34,7 +34,7 @@ The settings above are standard Supabase Auth features and do not depend on priv
 
 The owner must create the `app_owner` row and enable MFA in the dashboard before the app is used in production. The database should reject any write or unpublished read when the session is not `aal2`.
 
-After creating and confirming the owner account in Authentication → Users and applying `001_core_schema.sql`, register that Auth user as the owner in the SQL editor. Replace the placeholder with the exact account email:
+After creating and confirming the owner account in Authentication → Users and applying `20261108000100_core_schema.sql`, register that Auth user as the owner in the SQL editor. Replace the placeholder with the exact account email:
 
 ```sql
 insert into public.app_owner (id)
@@ -49,10 +49,15 @@ Run this using the Supabase SQL editor as the project database administrator, th
 ## 3) Security and storage checklist
 
 - Keep storage bucket names as `originals` and `public-media`.
-- Make `originals` private and restrict it to owner + `aal2` sessions.
-- Make `public-media` public only for sanitized certificate copies and published resume assets.
+- Keep `originals` private and restrict every object operation to the authenticated portfolio owner at `aal2`.
+- Treat `public-media` as publicly readable by URL. Only the owner at `aal2` may list or manage its objects; do not add anonymous object-listing policies.
+- Draft uploads go to `originals`. The admin uses 60-second signed URLs for previews. Publishing copies only the asset references in the published portfolio/design into `public-media`.
+- Unpublishing hides the published database record and queues public copies for cleanup. The owner can retry queued deletions from `/admin` after a reload or a new login. Assets still referenced by other published settings are retained. Public URLs are not protected by database `published` flags; already downloaded files and third-party/browser caches cannot be recalled.
 - Never allow SVG or HTML uploads.
-- Use signed URLs for private originals with a short expiry (about 60 seconds).
+- Set the `CONTACT_ALLOWED_ORIGIN` Edge Function secret to the exact HTTPS website origin (scheme and host, no path or trailing slash). It is never a `VITE_` browser variable.
+- Keep `SUPABASE_SERVICE_ROLE_KEY` only in Supabase Edge Function secrets. Never put it in browser configuration.
+
+Existing objects in an already-public `public-media` bucket remain publicly retrievable until individually reviewed and removed. Applying the updated SQL does not retroactively revoke a public object's URL.
 
 ## 4) Recovery runbook for lost 2FA
 
@@ -85,10 +90,20 @@ Copy `.env.example` to a local `.env` file and replace the placeholders with the
 - Storage → Buckets
 - SQL editor → run migration files in order
 
-This repository ships the migration order as files under `supabase/migrations/`, and the edge function lives in `supabase/functions/contact/`.
+This repository ships the migrations as timestamp-prefixed files under `supabase/migrations/`. Apply them in filename order: `20261108000100_core_schema.sql`, `20261108000200_rls_and_views.sql`, `20261108000300_storage_and_contact.sql`, `20261108000400_portfolio_media.sql`, then `20261108000500_public_asset_cleanup_queue.sql`. Migration 005 depends on the `site_settings` table, `public.is_owner()` helper, and Supabase Storage objects established by migrations 001–003. The migrations are written to be safely re-applied and do not remove existing storage objects. The contact edge function lives in `supabase/functions/contact/`.
 
 ## 7) Portfolio editor and public media
 
-The private editor is available at `/admin`. After signing in and completing TOTP verification, it lets the owner edit the profile, skills, certificates, eligibility, experience, education, projects, and visual settings. Use **Save draft** to keep changes private; **Publish to recruiters** makes the saved portfolio content public.
+The private editor is available at `/admin`. After signing in and completing TOTP verification, it lets the owner edit the profile, skills, certificates, eligibility, experience, education, projects, and visual settings. Use **Save draft** to keep changes private; **Publish to recruiters** copies referenced originals into `public-media` and publishes the content. Use **Unpublish** to hide the portfolio and remove unreferenced public copies. A database `published` flag does not restrict access to a public Storage object.
 
-The photo, project screenshots, certificate documents, resume PDF, and optional WOFF2 font are uploaded to the `public-media` bucket and are publicly retrievable by URL. Only upload assets intended for public display. The client enforces 2 MB for each image/font and 10 MB for a PDF; the bucket enforces a 10 MB maximum. Each project must have at least two screenshots before publishing. For the editor to work, apply `004_portfolio_media.sql` after migrations `001`–`003`, create/register the owner account, and configure the public Supabase URL and key in the frontend environment.
+The photo, project screenshots, certificate documents, resume PDF, and optional WOFF2 font are uploaded to the private `originals` bucket by default. Private previews use short-lived signed URLs. Publishing copies the selected files to `public-media`; only those copies are publicly retrievable. The client enforces 2 MB for each image/font and 10 MB for a PDF; both buckets enforce a 10 MB maximum. Each project must have at least two screenshots before publishing. Configure the public Supabase URL and anon key in the frontend environment; configure the allowed website origin and service-role key only as Edge Function secrets.
+
+### Review existing `public-media` objects
+
+The migration does not delete or approve existing objects. Review them using the authenticated owner account, not the SQL editor or a service-role key:
+
+1. Apply migrations `20261108000100`–`20261108000500` in order, configure `.env` with the project URL and anon key, and ensure the portfolio owner has a verified TOTP factor.
+2. As a separate, manual owner/AAL2-authorized operation after migrations have been applied, run `npm run reconcile:public-media` from an interactive terminal. This review is not part of migration execution and never runs automatically. The tool signs in with the owner password and requests a TOTP code if the session is not already `aal2`. Database and Storage RLS must confirm owner and `aal2` before inventory is available. The tool uses only the anon key and never prints credentials.
+3. Review each recursively listed object. Choose **Keep public** only for an asset explicitly approved for publication; choose **Move to private originals** for an unapproved asset whose private copy should be retained; choose **Skip** if its purpose or value is unknown. No object is changed without a per-object choice.
+4. Moving an asset first copies it to `originals` and rewrites matching unpublished setting references. The public copy is removed only after it is queued and checked against all currently published `site_settings` references. If it is still referenced by published content, the tool refuses the move; unpublish or replace that reference first. Failed deletion stays in the owner/AAL2 cleanup queue and can be retried from `/admin`.
+5. To verify a fresh project needs no legacy migration, run the inventory tool and confirm it reports no objects; also confirm `public-media` is empty in Storage → Buckets. An empty inventory does not make `public-media` private: future published assets remain publicly retrievable by URL.

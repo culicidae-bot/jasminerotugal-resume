@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "node scripts/check-csp.mjs --build && vite build",
     "check:csp": "node scripts/check-csp.mjs --strict",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test",
+    "reconcile:public-media": "node scripts/reconcile-public-media.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

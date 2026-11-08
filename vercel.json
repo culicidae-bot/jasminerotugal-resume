@@ -11,7 +11,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://REPLACE_WITH_SUPABASE_PROJECT_ORIGIN; img-src 'self' data: https://REPLACE_WITH_SUPABASE_PROJECT_ORIGIN; font-src 'self' data: https://REPLACE_WITH_SUPABASE_PROJECT_ORIGIN; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+          "value": "default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://dbgiqrsytrkmqfugtsvs.supabase.co; img-src 'self' data: https://dbgiqrsytrkmqfugtsvs.supabase.co; font-src 'self' data: https://dbgiqrsytrkmqfugtsvs.supabase.co; object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
         },
         {
           "key": "Strict-Transport-Security",

@@ -5,10 +5,14 @@ import '../admin.css';
 import { applyDesignTokens, normalizeDatabaseDesign } from '../lib/design-settings.js';
 import {
   loadPortfolioDraft,
+  loadPendingPublicAssetCleanupWithClient,
   mergePublishedPortfolioContent,
   publishPortfolioContent,
+  resolvePortfolioAssetUrl,
+  retryPublicAssetCleanup,
   savePortfolioDesign,
   savePortfolioDraft,
+  unpublishPortfolioContent,
   uploadPortfolioAsset,
 } from '../lib/portfolio-content.js';
 
@@ -76,6 +80,44 @@ function updatePath(value, path, nextValue) {
   for (const key of keys.slice(0, -1)) cursor = cursor[key];
   cursor[keys[keys.length - 1]] = nextValue;
   return result;
+}
+
+function useAssetPreviewUrl(src) {
+  const [url, setUrl] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    setUrl('');
+    setError('');
+    if (!src) return () => { active = false; };
+
+    resolvePortfolioAssetUrl(src)
+      .then((previewUrl) => {
+        if (active) setUrl(previewUrl);
+      })
+      .catch((previewError) => {
+        if (active) setError(previewError.message);
+      });
+
+    return () => { active = false; };
+  }, [src]);
+
+  return { url, error };
+}
+
+function DraftAssetLink({ src, children }) {
+  const { url, error } = useAssetPreviewUrl(src);
+  if (error) return <span role="status">Preview unavailable: {error}</span>;
+  if (!url) return <span>Preparing private preview…</span>;
+  return <a href={url} target="_blank" rel="noreferrer">{children}</a>;
+}
+
+function DraftAssetImage({ src, alt, className }) {
+  const { url, error } = useAssetPreviewUrl(src);
+  if (error) return <span role="status">Preview unavailable: {error}</span>;
+  if (!url) return <span>Preparing private preview…</span>;
+  return <img className={className} src={url} alt={alt} />;
 }
 
 function TextField({ label, value, onChange, multiline = false, type = 'text', hint }) {
@@ -212,7 +254,7 @@ function RecordListEditor({
                   <ul className="uploaded-file-list">
                     {record.screenshots.map((image, imageIndex) => (
                       <li key={`${image.src}-${imageIndex}`}>
-                        <a href={image.src} target="_blank" rel="noreferrer">Screenshot {imageIndex + 1}</a>
+                        <DraftAssetLink src={image.src}>Screenshot {imageIndex + 1}</DraftAssetLink>
                         <button
                           className="text-button"
                           type="button"
@@ -240,7 +282,7 @@ function RecordListEditor({
                     />
                     {record.publicFile?.src ? (
                       <p>
-                        <a href={record.publicFile.src} target="_blank" rel="noreferrer">Open uploaded document</a>
+                        <DraftAssetLink src={record.publicFile.src}>Open uploaded document</DraftAssetLink>
                         {' · '}
                         <button className="text-button" type="button" onClick={() => updateRecord(index, 'publicFile', null)}>Remove file</button>
                       </p>
@@ -280,16 +322,20 @@ export default function AdminDashboard({ onLogout }) {
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
+  const [needsAssetCleanup, setNeedsAssetCleanup] = useState(false);
+  const [cleanupPaths, setCleanupPaths] = useState([]);
 
   const preset = useMemo(() => presets[designDraft.theme_mode] || presets['graphite-violet'], [designDraft.theme_mode]);
 
   useEffect(() => {
     let active = true;
-    loadPortfolioDraft()
-      .then(({ content: saved, published }) => {
+    Promise.all([loadPortfolioDraft(), loadPendingPublicAssetCleanupWithClient()])
+      .then(([{ content: saved, published, cleanupNeeded }, pendingCleanupPaths]) => {
         if (!active) return;
         if (saved) setDraft((current) => mergePublishedPortfolioContent(current, saved));
         setIsPublished(published);
+        setCleanupPaths(pendingCleanupPaths);
+        setNeedsAssetCleanup(cleanupNeeded || pendingCleanupPaths.length > 0);
       })
       .catch((error) => {
         if (active) setStatus(`Could not load saved content: ${error.message}`);
@@ -321,8 +367,11 @@ export default function AdminDashboard({ onLogout }) {
     setStatus('');
     try {
       await savePortfolioDraft(draft);
-      setIsPublished(false);
-      setStatus('Draft saved. It is not visible to recruiters until you publish it.');
+      setStatus(
+        isPublished
+          ? 'Draft saved. Your current published portfolio remains visible until you publish or unpublish.'
+          : 'Draft saved. It is not visible to recruiters until you publish it.',
+      );
     } catch (error) {
       setStatus(`Could not save draft: ${error.message}`);
     } finally {
@@ -343,12 +392,70 @@ export default function AdminDashboard({ onLogout }) {
     setBusy(true);
     setStatus('');
     try {
-      await publishPortfolioContent(draft);
+      const { content: publishedContent, warnings, cleanupCandidates } =
+        await publishPortfolioContent(draft);
       setIsPublished(true);
-      onPublishedContentChange(draft);
-      setStatus('Your portfolio updates are published.');
+      onPublishedContentChange(publishedContent);
+      setCleanupPaths(cleanupCandidates);
+      setNeedsAssetCleanup(cleanupCandidates.length > 0);
+      setStatus(
+        warnings.length
+          ? `Portfolio published with cleanup warnings: ${warnings.join(' ')}`
+          : 'Your portfolio updates are published.',
+      );
     } catch (error) {
       setStatus(`Could not publish changes: ${error.message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function unpublish() {
+    setBusy(true);
+    setStatus('');
+    try {
+      const { cleanupError, content: privateDraft, cleanupCandidates, retainedPaths } =
+        await unpublishPortfolioContent();
+      if (privateDraft) setDraft(privateDraft);
+      setIsPublished(false);
+      setCleanupPaths(cleanupCandidates);
+      setNeedsAssetCleanup(Boolean(cleanupError) || cleanupCandidates.length > 0);
+      onPublishedContentChange(null);
+      setStatus(
+        cleanupError
+          ? `Portfolio is unpublished, but cleanup did not finish: ${cleanupError.message}${cleanupCandidates.length ? ` ${cleanupCandidates.length} public asset(s) remain queued and may still be accessible.` : ''}`
+          : retainedPaths.length
+            ? `Portfolio unpublished. ${retainedPaths.length} asset(s) remain public because other published content references them.`
+            : 'Portfolio unpublished and unreferenced public assets removed.',
+      );
+    } catch (error) {
+      setStatus(`Could not unpublish portfolio content: ${error.message}`);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function retryAssetCleanup() {
+    if (!cleanupPaths.length) {
+      await unpublish();
+      return;
+    }
+
+    setBusy(true);
+    setStatus('');
+    try {
+      const { pendingPaths, retainedPaths } = await retryPublicAssetCleanup(cleanupPaths);
+      setCleanupPaths(pendingPaths);
+      setNeedsAssetCleanup(pendingPaths.length > 0);
+      setStatus(
+        pendingPaths.length
+          ? `${pendingPaths.length} public asset(s) remain queued for cleanup.`
+          : retainedPaths.length
+            ? `Cleanup is complete. ${retainedPaths.length} asset(s) remain public because other published content references them.`
+            : 'Unreferenced public assets have been removed.',
+      );
+    } catch (error) {
+      setStatus(`Could not remove unreferenced public assets: ${error.message}`);
     } finally {
       setBusy(false);
     }
@@ -358,11 +465,24 @@ export default function AdminDashboard({ onLogout }) {
     setBusy(true);
     setStatus('');
     try {
-      await savePortfolioDesign(designDraft);
-      const nextDesign = normalizeDatabaseDesign(designDraft);
+      const { settings: publishedSettings, cleanupError, cleanupCandidates } =
+        await savePortfolioDesign(designDraft);
+      if (cleanupCandidates.length) {
+        setCleanupPaths(cleanupCandidates);
+        setNeedsAssetCleanup(true);
+      } else {
+        setCleanupPaths([]);
+        setNeedsAssetCleanup(false);
+      }
+      setDesignDraft((current) => ({ ...current, ...publishedSettings }));
+      const nextDesign = normalizeDatabaseDesign(publishedSettings);
       applyDesignTokens(nextDesign);
       onDesignChange(nextDesign);
-      setStatus('Design settings saved and published.');
+      setStatus(
+        cleanupError
+          ? `Design settings published, but some old public assets could not be removed: ${cleanupError.message}`
+          : 'Design settings saved and published.',
+      );
     } catch (error) {
       setStatus(`Could not save design settings: ${error.message}`);
     } finally {
@@ -487,7 +607,7 @@ export default function AdminDashboard({ onLogout }) {
                 }}
               />
             </label>
-            {draft.hero.portrait?.src ? <img className="admin-photo-preview" src={draft.hero.portrait.src} alt={draft.hero.portrait.alt || ''} /> : null}
+            {draft.hero.portrait?.src ? <DraftAssetImage className="admin-photo-preview" src={draft.hero.portrait.src} alt={draft.hero.portrait.alt || ''} /> : null}
             <label className="admin-upload">
               <span>Upload resume PDF</span>
               <input
@@ -499,7 +619,7 @@ export default function AdminDashboard({ onLogout }) {
                 }}
               />
             </label>
-            {draft.resumePath ? <a href={draft.resumePath} target="_blank" rel="noreferrer">Open current resume</a> : null}
+            {draft.resumePath ? <DraftAssetLink src={draft.resumePath}>Open current resume</DraftAssetLink> : null}
           </div>
         </section>
       ) : null}
@@ -616,8 +736,12 @@ export default function AdminDashboard({ onLogout }) {
                 event.target.value = '';
               }} />
             </label>
+            {designDraft.font_url ? <DraftAssetLink src={designDraft.font_url}>Open font draft</DraftAssetLink> : null}
             {designDraft.font_url ? <button className="text-button" type="button" onClick={() => updateDesign('font_url', '')}>Use selected font style instead</button> : null}
           </div>
+          {needsAssetCleanup ? (
+            <button className="admin-button" type="button" disabled={busy} onClick={retryAssetCleanup}>Retry public asset cleanup</button>
+          ) : null}
           <button className="admin-button admin-button-primary" type="button" disabled={busy} onClick={saveDesign}>Save design</button>
         </section>
       ) : null}
@@ -628,6 +752,8 @@ export default function AdminDashboard({ onLogout }) {
           <div>
             <button className="admin-button" type="button" disabled={busy} onClick={saveDraft}>Save draft</button>
             <button className="admin-button admin-button-primary" type="button" disabled={busy} onClick={publish}>Publish to recruiters</button>
+            {isPublished ? <button className="admin-button admin-button-danger" type="button" disabled={busy} onClick={unpublish}>Unpublish</button> : null}
+            {needsAssetCleanup ? <button className="admin-button" type="button" disabled={busy} onClick={retryAssetCleanup}>Retry public asset cleanup</button> : null}
           </div>
         </footer>
       ) : null}
