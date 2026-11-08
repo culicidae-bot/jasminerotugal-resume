@@ -29,6 +29,7 @@ const tabs = [
 
 const listFields = {
   skills: [
+    { key: 'category', label: 'Category (for example, technical or professional)' },
     { key: 'name', label: 'Skill name' },
     { key: 'proficiency', label: 'Proficiency (0–100)', type: 'number' },
     { key: 'label', label: 'Proficiency label' },
@@ -495,7 +496,7 @@ export default function AdminDashboard({ onLogout }) {
     const next = updatePath(draft, 'hero.portrait', {
       ...(draft.hero.portrait || {}),
       src,
-      alt: draft.hero.portrait?.alt?.startsWith('[TODO:') ? `${draft.hero.name} professional portrait` : draft.hero.portrait?.alt || `${draft.hero.name} professional portrait`,
+      alt: draft.hero.portrait?.alt || `${draft.hero.name} professional portrait`,
       width: 960,
       height: 1200,
       focalPoint: 'upper-center',

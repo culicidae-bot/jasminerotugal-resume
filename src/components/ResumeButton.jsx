@@ -1,29 +1,48 @@
 import { useEffect, useId, useState } from 'react';
 import { useSite } from '../lib/site-context.js';
+import { isSafeImagePath } from '../lib/urls.js';
+
+const STATIC_RESUME_PATH = '/resume/RotugalJasmine.pdf';
 
 export default function ResumeButton() {
   const { content } = useSite();
-  const [state, setState] = useState('checking');
+  const [resume, setResume] = useState({ state: 'checking', path: '' });
   const noteId = useId();
 
   useEffect(() => {
     const controller = new AbortController();
     let active = true;
+    const candidate = isSafeImagePath(content.resumePath)
+      ? content.resumePath
+      : STATIC_RESUME_PATH;
 
-    fetch(content.resumePath, {
-      method: 'HEAD',
-      cache: 'no-store',
-      signal: controller.signal,
-    })
-      .then((response) => {
+    async function isAvailable(path) {
+      try {
+        const response = await fetch(path, {
+          method: 'HEAD',
+          cache: 'no-store',
+          signal: controller.signal,
+        });
         const type = (response.headers.get('content-type') || '').toLowerCase();
-        if (active) {
-          setState(response.ok && type.includes('application/pdf') ? 'available' : 'missing');
-        }
-      })
-      .catch(() => {
-        if (active) setState('missing');
-      });
+        return response.ok && type.includes('application/pdf');
+      } catch {
+        return false;
+      }
+    }
+
+    setResume({ state: 'checking', path: '' });
+    isAvailable(candidate).then(async (available) => {
+      if (!active) return;
+      if (available) {
+        setResume({ state: 'available', path: candidate });
+        return;
+      }
+      if (candidate !== STATIC_RESUME_PATH && (await isAvailable(STATIC_RESUME_PATH))) {
+        if (active) setResume({ state: 'available', path: STATIC_RESUME_PATH });
+        return;
+      }
+      if (active) setResume({ state: 'missing', path: '' });
+    });
 
     return () => {
       active = false;
@@ -31,10 +50,14 @@ export default function ResumeButton() {
     };
   }, [content.resumePath]);
 
-  if (state === 'available') {
+  if (resume.state === 'available') {
     return (
       <div className="resume-action">
-        <a className="button button-secondary" href={content.resumePath} download>
+        <a
+          className="button button-secondary"
+          href={resume.path}
+          download="RotugalJasmine.pdf"
+        >
           {content.ui.downloadResume}
         </a>
         <p className="asset-note" id={noteId}>
@@ -45,7 +68,7 @@ export default function ResumeButton() {
   }
 
   const note =
-    state === 'checking' ? content.ui.resumeChecking : content.ui.resumeUnavailable;
+    resume.state === 'checking' ? content.ui.resumeChecking : content.ui.resumeUnavailable;
 
   return (
     <div className="resume-action">

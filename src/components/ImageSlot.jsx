@@ -1,8 +1,7 @@
 import { isTodo } from '../lib/format.js';
 import { isSafeImagePath } from '../lib/urls.js';
-import { useSite } from '../lib/site-context.js';
 
-function isUsableImage(image) {
+export function isUsableImage(image) {
   return Boolean(
     image &&
       typeof image === 'object' &&
@@ -18,22 +17,8 @@ function isUsableImage(image) {
 }
 
 export default function ImageSlot({ image, kind, eager = false }) {
-  const { content } = useSite();
   const usable = isUsableImage(image);
-  const detail =
-    image && typeof image.alt === 'string' && image.alt.trim()
-      ? image.alt
-      : content.ui.imageMissing;
-
-  if (!usable) {
-    return (
-      <div className={`image-slot image-slot-${kind} image-placeholder`} data-kind={kind}>
-        <span className="placeholder-rule" aria-hidden="true" />
-        <span className="placeholder-label">{content.ui.imagePlaceholder}</span>
-        <span className="placeholder-detail">{detail}</span>
-      </div>
-    );
-  }
+  if (!usable) return null;
 
   return (
     <div className={`image-slot image-slot-${kind}`} data-kind={kind}>

@@ -1,5 +1,3 @@
-import EmptyState from '../components/EmptyState.jsx';
-import SampleTag from '../components/SampleTag.jsx';
 import Section from '../components/Section.jsx';
 import TodoText from '../components/TodoText.jsx';
 import { formatDate } from '../lib/format.js';
@@ -17,12 +15,7 @@ export default function EligibilitySection({ index }) {
       intro={section.intro}
       index={index}
     >
-      {content.eligibility.length === 0 ? (
-        <EmptyState
-          title={content.ui.emptyEligibility.title}
-          detail={content.ui.emptyEligibility.detail}
-        />
-      ) : (
+      {content.eligibility.length ? (
         <ul className="eligibility-list">
           {content.eligibility.map((record) => {
             const date = formatDate(record.dateConferred);
@@ -33,7 +26,6 @@ export default function EligibilitySection({ index }) {
                   <p>
                     <TodoText value={record.issuer} />
                   </p>
-                  {record.sample ? <SampleTag /> : null}
                 </div>
                 <p className="record-date">
                   {date ? (
@@ -46,7 +38,7 @@ export default function EligibilitySection({ index }) {
             );
           })}
         </ul>
-      )}
+      ) : null}
     </Section>
   );
 }

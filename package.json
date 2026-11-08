@@ -9,7 +9,8 @@
     "check:csp": "node scripts/check-csp.mjs --strict",
     "preview": "vite preview",
     "test": "node --test",
-    "reconcile:public-media": "node scripts/reconcile-public-media.mjs"
+    "reconcile:public-media": "node scripts/reconcile-public-media.mjs",
+    "resume:generate": "python scripts/generate_resume.py"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.119.0",

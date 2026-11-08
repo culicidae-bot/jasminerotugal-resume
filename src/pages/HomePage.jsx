@@ -10,6 +10,7 @@ import ProjectsSection from '../sections/ProjectsSection.jsx';
 import EducationSection from '../sections/EducationSection.jsx';
 import SecuritySection, { hasSecurityContent } from '../sections/SecuritySection.jsx';
 import ContactSection from '../sections/ContactSection.jsx';
+import { hasPublicSectionContent } from '../lib/public-sections.js';
 
 const sectionComponents = {
   about: AboutSection,
@@ -26,9 +27,12 @@ const sectionComponents = {
 export default function HomePage() {
   const { content, design } = useSite();
   const visibleOrder = design.sectionOrder.filter((id) => {
-    if (id === 'hero') return design.sectionVisibility.hero;
     if (id === 'security' && !hasSecurityContent(content)) return false;
-    return Boolean(sectionComponents[id]) && design.sectionVisibility[id];
+    return (
+      (id === 'hero' || Boolean(sectionComponents[id])) &&
+      design.sectionVisibility[id] &&
+      hasPublicSectionContent(id, content)
+    );
   });
 
   const sectionNumbers = {};

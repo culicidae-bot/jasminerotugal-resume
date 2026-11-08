@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   listPublicMediaInventoryWithClient,
   loadPendingPublicAssetCleanupWithClient,
+  mergePublishedPortfolioContent,
   movePublicMediaToPrivateWithClient,
   publishPortfolioContentWithClient,
   resolvePortfolioAssetUrl,
@@ -12,6 +13,7 @@ import {
   uploadPortfolioAssetWithClient,
   validatePublishedAssetReferencesWithClient,
 } from './portfolio-content.js';
+import { content } from '../data/content.js';
 
 function createStorageClient(initialSettings = []) {
   const settings = [...initialSettings];
@@ -156,6 +158,22 @@ function createStorageClient(initialSettings = []) {
   };
   return client;
 }
+
+test('legacy published template instructions are never merged into public content', () => {
+  const merged = mergePublishedPortfolioContent(content, {
+    hero: {
+      focus: '[TODO: add a professional introduction]',
+      title: 'Aspiring Cybersecurity and Network Security Professional',
+    },
+    about: {
+      educationSummary: 'Edit the source files to add education.',
+    },
+  });
+
+  assert.equal(merged.hero.focus, content.hero.focus);
+  assert.equal(merged.about.educationSummary, content.about.educationSummary);
+  assert.doesNotMatch(JSON.stringify(merged), /\[TODO:|edit the source files/i);
+});
 
 test('new asset uploads stay private and draft previews use short-lived signed URLs', async () => {
   const client = createStorageClient();

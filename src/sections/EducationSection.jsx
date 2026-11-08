@@ -1,7 +1,7 @@
-import SampleTag from '../components/SampleTag.jsx';
 import Section from '../components/Section.jsx';
 import TodoText from '../components/TodoText.jsx';
 import { useSite } from '../lib/site-context.js';
+import { isTodo } from '../lib/format.js';
 
 function EducationRow({ record }) {
   const { content } = useSite();
@@ -10,7 +10,6 @@ function EducationRow({ record }) {
     <article className="education-row">
       <p className="item-label">
         <span>{record.level}</span>
-        {record.sample ? <SampleTag /> : null}
       </p>
       <div className="education-main">
         <h3>
@@ -25,10 +24,12 @@ function EducationRow({ record }) {
               </dd>
             </>
           ) : null}
-          <dt>{labels.year}</dt>
-          <dd>
-            <TodoText value={record.yearGraduated} />
-          </dd>
+          {record.yearGraduated && !isTodo(record.yearGraduated) ? (
+            <>
+              <dt>{labels.year}</dt>
+              <dd>{record.yearGraduated}</dd>
+            </>
+          ) : null}
           {record.achievement ? (
             <>
               <dt>{labels.achievement}</dt>
@@ -46,7 +47,8 @@ function EducationRow({ record }) {
 export default function EducationSection({ index }) {
   const { content } = useSite();
   const section = content.sections.education;
-  const records = [content.education.tertiary, content.education.secondary, content.education.elementary];
+  const records = [content.education.tertiary, content.education.secondary, content.education.elementary]
+    .filter((record) => record?.institution && !isTodo(record.institution));
 
   return (
     <Section

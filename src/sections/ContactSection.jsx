@@ -1,7 +1,5 @@
 import { useId, useRef, useState } from 'react';
-import SampleTag from '../components/SampleTag.jsx';
 import Section from '../components/Section.jsx';
-import TodoText from '../components/TodoText.jsx';
 import { ExternalIcon } from '../components/Icons.jsx';
 import { submitContactMessage, validateContact } from '../lib/contact.js';
 import { mailtoSafeAddress, isSafeHttpUrl } from '../lib/urls.js';
@@ -165,55 +163,49 @@ export default function ContactSection({ index }) {
   const contactEmail = mailtoSafeAddress(content.contact.email);
   const github = isSafeHttpUrl(content.contact.github) ? content.contact.github : null;
   const linkedin = isSafeHttpUrl(content.contact.linkedin) ? content.contact.linkedin : null;
+  const hasContactDetails = Boolean(contactEmail || github || linkedin);
 
   return (
     <Section id="contact" label={section.label} title={section.title} intro={section.intro} index={index}>
-      <div className="contact-grid">
-        <div className="contact-details">
-          {content.contact.sample ? <SampleTag /> : null}
-          <dl className="contact-list">
-            <div>
-              <dt>{labels.email}</dt>
-              <dd>
-                {contactEmail ? (
-                  content.contact.email
-                ) : (
-                  <TodoText value={content.contact.email} />
-                )}
-              </dd>
-            </div>
-            <div>
-              <dt>{labels.github}</dt>
-              <dd>
-                {github ? (
-                  <a href={github} target="_blank" rel="noopener noreferrer">
-                    {content.contact.githubLabel}
-                    <ExternalIcon />
-                    <span className="visually-hidden"> ({content.ui.opensNewTab})</span>
-                  </a>
-                ) : (
-                  <TodoText value={content.contact.github} />
-                )}
-              </dd>
-            </div>
-            {linkedin || content.contact.linkedin ? (
-              <div>
-                <dt>{labels.linkedin}</dt>
-                <dd>
-                  {linkedin ? (
+      <div className={`contact-grid${hasContactDetails ? '' : ' contact-grid-single'}`}>
+        {hasContactDetails ? (
+          <div className="contact-details">
+            <dl className="contact-list">
+              {contactEmail ? (
+                <div>
+                  <dt>{labels.email}</dt>
+                  <dd>
+                    <a href={`mailto:${contactEmail}`}>{contactEmail}</a>
+                  </dd>
+                </div>
+              ) : null}
+              {github ? (
+                <div>
+                  <dt>{labels.github}</dt>
+                  <dd>
+                    <a href={github} target="_blank" rel="noopener noreferrer">
+                      {content.contact.githubLabel}
+                      <ExternalIcon />
+                      <span className="visually-hidden"> ({content.ui.opensNewTab})</span>
+                    </a>
+                  </dd>
+                </div>
+              ) : null}
+              {linkedin ? (
+                <div>
+                  <dt>{labels.linkedin}</dt>
+                  <dd>
                     <a href={linkedin} target="_blank" rel="noopener noreferrer">
                       {content.contact.linkedinLabel}
                       <ExternalIcon />
                       <span className="visually-hidden"> ({content.ui.opensNewTab})</span>
                     </a>
-                  ) : (
-                    <TodoText value={content.contact.linkedin} />
-                  )}
-                </dd>
-              </div>
-            ) : null}
-          </dl>
-        </div>
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
+          </div>
+        ) : null}
         <ContactForm contactEmail={contactEmail} />
       </div>
     </Section>

@@ -1,30 +1,16 @@
-import EmptyState from '../components/EmptyState.jsx';
-import ImageSlot from '../components/ImageSlot.jsx';
-import SampleTag from '../components/SampleTag.jsx';
+import ImageSlot, { isUsableImage } from '../components/ImageSlot.jsx';
 import Section from '../components/Section.jsx';
 import { useSite } from '../lib/site-context.js';
+import { isPublicProject } from '../lib/public-sections.js';
 
-function screenshotSlots(project, missingAlt) {
-  const provided = Array.isArray(project.screenshots)
-    ? project.screenshots.filter((screenshot) => screenshot && typeof screenshot === 'object')
-    : [];
-  const slots = [...provided];
-  while (slots.length < 2) {
-    slots.push({
-      src: null,
-      alt: missingAlt,
-      width: 1440,
-      height: 900,
-      focalPoint: 'center',
-      loading: 'lazy',
-    });
-  }
-  return slots;
+function projectScreenshots(project) {
+  return Array.isArray(project.screenshots) ? project.screenshots.filter(isUsableImage) : [];
 }
 
 export default function ProjectsSection({ index }) {
   const { content, design } = useSite();
   const section = content.sections.projects;
+  const projects = content.projects.filter(isPublicProject);
 
   return (
     <Section
@@ -34,18 +20,12 @@ export default function ProjectsSection({ index }) {
       intro={section.intro}
       index={index}
     >
-      {content.projects.length === 0 ? (
-        <EmptyState
-          title={content.ui.emptyProjects.title}
-          detail={content.ui.emptyProjects.detail}
-        />
-      ) : (
+      {projects.length ? (
         <div className="project-list" data-layout={design.projectsLayout}>
-          {content.projects.map((project) => (
+          {projects.map((project) => (
             <article className="project" key={project.id}>
               <header className="project-header">
                 <p className="item-label">
-                  {project.sample ? <SampleTag /> : null}
                   <span>{project.role}</span>
                 </p>
                 <h3>{project.title}</h3>
@@ -82,7 +62,7 @@ export default function ProjectsSection({ index }) {
                 role="group"
                 aria-label={content.ui.projectLabels.screenshots}
               >
-                {screenshotSlots(project, content.ui.projectScreenshotPlaceholder).map((screenshot, position) => (
+                {projectScreenshots(project).map((screenshot, position) => (
                   <figure className="browser-frame" key={`${project.id}-${position}`}>
                     <div className="browser-bar" aria-hidden="true">
                       <span className="browser-dots">
@@ -99,7 +79,7 @@ export default function ProjectsSection({ index }) {
             </article>
           ))}
         </div>
-      )}
+      ) : null}
     </Section>
   );
 }

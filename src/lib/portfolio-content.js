@@ -50,6 +50,21 @@ const PUBLIC_CONTENT_KEYS = [
   'contactSubject',
 ];
 
+function sanitizeTemplateText(value) {
+  if (typeof value === 'string') {
+    const templateInstruction =
+      /\[TODO\b|not yet added|image placeholder|\$\s*whoami|(?:edit|change)\s+(?:the\s+)?(?:source|src)(?:\s+files?)?|add\s+(?:a|an|your)\s+(?:image|photo|picture|resume|certificate|project)/i;
+    return templateInstruction.test(value) ? undefined : value;
+  }
+  if (Array.isArray(value)) return value.map(sanitizeTemplateText).filter((item) => item !== undefined);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(
+    Object.entries(value)
+      .map(([key, item]) => [key, sanitizeTemplateText(item)])
+      .filter(([, item]) => item !== undefined),
+  );
+}
+
 function mergeContent(base, override) {
   if (Array.isArray(base)) return Array.isArray(override) ? override : base;
   if (!base || typeof base !== 'object') {
@@ -66,13 +81,14 @@ function mergeContent(base, override) {
 
 export function mergePublishedPortfolioContent(base, savedContent) {
   if (!savedContent || typeof savedContent !== 'object' || Array.isArray(savedContent)) return base;
+  const sanitizedContent = sanitizeTemplateText(savedContent);
   const result = { ...base };
   for (const key of PUBLIC_CONTENT_KEYS) {
     if (
       Object.prototype.hasOwnProperty.call(base, key) &&
-      Object.prototype.hasOwnProperty.call(savedContent, key)
+      Object.prototype.hasOwnProperty.call(sanitizedContent, key)
     ) {
-      result[key] = mergeContent(base[key], savedContent[key]);
+      result[key] = mergeContent(base[key], sanitizedContent[key]);
     }
   }
   return result;

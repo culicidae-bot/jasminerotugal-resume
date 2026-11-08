@@ -9,29 +9,23 @@ export const content = {
       'Certificate register for Jasmine L. Rotugal, including type, issuer, date earned, and the source of each record.',
     notFoundTitle: 'Page not found — Jasmine L. Rotugal',
     notFoundDescription: 'The requested page does not exist.',
-    ogImage: {
-      src: null,
-      alt: '[TODO: add an Open Graph image at public/images/og-image.jpg and write its alt text]',
-      width: 1200,
-      height: 630,
-    },
+    ogImage: null,
   },
   nav: [
-    { label: 'About', to: '/#about' },
-    { label: 'Projects', to: '/#projects' },
-    { label: 'Certificates', to: '/certificates' },
+    { label: 'Profile', to: '/#about' },
+    { label: 'Education', to: '/#education' },
     { label: 'Contact', to: '/#contact' },
   ],
   hero: {
-    eyebrow: 'Resume portfolio · Isabela State University Cauayan',
+    eyebrow: 'BSIT Student · Isabela State University – Cauayan',
     name: 'Jasmine L. Rotugal',
-    title: 'BSIT Student | Aspiring Cybersecurity & Network Security Professional',
+    title: 'Aspiring Cybersecurity and Network Security Professional',
     focus:
-      'I study information technology at Isabela State University Cauayan and am building a foundation for security-focused work.',
-    whoami: '$ whoami',
+      'I am a current Bachelor of Science in Information Technology student at Isabela State University – Cauayan, focused on a future in cybersecurity and network security.',
+    whoami: '',
     portrait: {
       src: null,
-      alt: '[TODO: add a portrait at public/images/portrait.jpg and write its alt text]',
+      alt: '',
       width: 960,
       height: 1200,
       focalPoint: 'upper-center',
@@ -39,7 +33,7 @@ export const content = {
     },
     cover: {
       src: null,
-      alt: '[TODO: add a hero cover image at public/images/hero-cover.jpg and write its alt text]',
+      alt: '',
       width: 1600,
       height: 1000,
       focalPoint: 'center',
@@ -48,39 +42,39 @@ export const content = {
   },
   sections: {
     about: {
-      label: 'About',
-      title: 'Study, practice, and direction.',
-      intro: 'The short record behind the resume.',
+      label: 'Professional profile',
+      title: 'A clear direction in information security.',
+      intro: 'An introduction to Jasmine and her professional goals.',
     },
     skills: {
       label: 'Skills',
-      title: 'Capability, with an honest scale.',
-      intro: 'Rated skills appear with a 0–100 bar and a matching text label.',
+      title: 'Technical and professional skills.',
+      intro: 'Capabilities supported by verified experience.',
     },
     certificates: {
       label: 'Certificates',
       title: 'Certificates and achievements.',
-      intro: 'Recent records, with the full register kept separately.',
+      intro: 'Verified records and supporting documentation.',
     },
     eligibility: {
       label: 'Eligibility',
       title: 'Eligibility and certifications.',
-      intro: 'Conferment dates appear only when they are known.',
+      intro: 'Professional credentials and eligibility records.',
     },
     experience: {
       label: 'Experience',
-      title: 'Work, internship, and volunteer record.',
-      intro: 'Responsibilities and accomplishments, kept specific.',
+      title: 'Experience.',
+      intro: 'Work, internship, and volunteer experience.',
     },
     projects: {
       label: 'Projects',
       title: 'Selected projects.',
-      intro: 'Purpose, build, and contribution, shown with project screenshots.',
+      intro: 'Project work, contributions, and product screenshots.',
     },
     education: {
       label: 'Education',
       title: 'Education.',
-      intro: 'Tertiary, secondary, and elementary records.',
+      intro: 'Current tertiary education.',
     },
     security: {
       label: 'Security focus',
@@ -89,21 +83,21 @@ export const content = {
     },
     contact: {
       label: 'Contact',
-      title: 'Start a conversation.',
-      intro: 'The form opens a prefilled message in your own email app.',
+      title: 'Let’s connect.',
+      intro: 'Use the contact form to send a message.',
     },
   },
   about: {
     introduction:
-      'I am a BSIT student at Isabela State University Cauayan. This portfolio records my study, project work, and security learning as I prepare for a career in cybersecurity and network security.',
+      'I am a Bachelor of Science in Information Technology student at Isabela State University – Cauayan, preparing for a career focused on cybersecurity and network security.',
     careerObjective:
-      'Build defensive technical depth through disciplined coursework, documented practice, and careful work with systems and networks.',
+      'Develop a career in cybersecurity and network security by building on my information technology education and continuing to learn.',
     educationSummary:
-      'BSIT, Isabela State University Cauayan. Graduation year: [TODO: confirm, expected 2027].',
+      'Bachelor of Science in Information Technology student at Isabela State University – Cauayan.',
     interests: ['Cybersecurity', 'Network security'],
     image: {
       src: null,
-      alt: '[TODO: add an about image at public/images/about.jpg and write its alt text]',
+      alt: '',
       width: 1200,
       height: 800,
       focalPoint: 'center',
@@ -123,21 +117,21 @@ export const content = {
   education: {
     tertiary: {
       level: 'Tertiary',
-      institution: 'Isabela State University — Cauayan',
+      institution: 'Isabela State University – Cauayan',
       course: 'BSIT, Bachelor of Science in Information Technology',
-      yearGraduated: '[TODO: confirm, expected 2027]',
-      achievement: '[TODO: add a tertiary achievement or remove this field]',
+      yearGraduated: null,
+      achievement: null,
     },
     secondary: {
       level: 'Secondary',
-      institution: '[TODO: add secondary school]',
-      yearGraduated: '[TODO: add graduation year]',
-      achievement: '[TODO: add a secondary achievement or remove this field]',
+      institution: null,
+      yearGraduated: null,
+      achievement: null,
     },
     elementary: {
       level: 'Elementary',
-      institution: '[TODO: add elementary school]',
-      yearGraduated: '[TODO: add graduation year]',
+      institution: null,
+      yearGraduated: null,
     },
   },
   securityFocus: {
@@ -151,7 +145,7 @@ export const content = {
     githubLabel: 'GitHub',
     linkedinLabel: 'LinkedIn',
   },
-  resumePath: '/resume/RotugalJasmine-Resume.pdf',
+  resumePath: '/resume/RotugalJasmine.pdf',
   contactSubject: 'Portfolio enquiry',
   ui: {
     skipToContent: 'Skip to content',
@@ -162,21 +156,11 @@ export const content = {
     themeToDark: 'Switch to dark theme',
     themeLightShort: 'Light theme',
     themeDarkShort: 'Dark theme',
-    sampleTag: 'Sample (made-up)',
-    sampleBannerTitle: 'Preview with sample entries',
-    sampleBannerText:
-      'You are viewing made-up entries for layout review. Nothing marked Sample (made-up) is real.',
-    exitSample: 'Exit sample preview',
-    startSample: 'Preview with sample entries',
-    viewProjects: 'View projects',
+    viewProfile: 'Explore profile',
     downloadResume: 'Download resume',
     resumeChecking: 'Checking resume file…',
-    resumeUnavailable:
-      'The resume PDF is not available yet. [TODO: add public/resume/RotugalJasmine-Resume.pdf]',
+    resumeUnavailable: 'The resume PDF could not be loaded.',
     resumeAvailable: 'PDF resume',
-    imagePlaceholder: 'Image placeholder',
-    imageMissing: '[TODO: image file and alt text]',
-    notSet: '[TODO: not set]',
     statusLabels: {
       'issuer-verifiable': 'Issuer-verifiable',
       'document-on-file': 'Document on file',
@@ -220,43 +204,38 @@ export const content = {
     noVerificationLink: 'No public verification link',
     noDocument: 'No redacted certificate copy is recorded.',
     emptyCertificateRegister: {
-      title: 'No certificates are listed yet.',
-      detail:
-        '[TODO: add certificates in src/data/content.js, including type, issuer, date earned, public file, and verification URL when available.]',
+      title: 'No certificate records are currently published.',
+      detail: '',
     },
     emptySkills: {
-      title: 'No rated skills are listed yet.',
-      detail:
-        '[TODO: add skills with a 0–100 proficiency and a short text label in src/data/content.js.]',
+      title: 'No skill records are currently published.',
+      detail: '',
     },
     emptyCertificates: {
-      title: 'No certificates or achievements are listed yet.',
-      detail:
-        '[TODO: add certificates and achievements in src/data/content.js.]',
+      title: 'No certificate records are currently published.',
+      detail: '',
     },
     emptyEligibility: {
-      title: 'No eligibility or certification records are listed yet.',
-      detail:
-        '[TODO: add eligibility records and conferment dates in src/data/content.js.]',
+      title: 'No eligibility records are currently published.',
+      detail: '',
     },
     emptyExperience: {
       work: {
-        title: 'No work experience is listed yet.',
-        detail: '[TODO: add work experience in src/data/content.js.]',
+        title: 'No work experience is currently published.',
+        detail: '',
       },
       internship: {
-        title: 'No internship or OJT is listed yet.',
-        detail: '[TODO: add internship or OJT experience in src/data/content.js.]',
+        title: 'No internship or OJT experience is currently published.',
+        detail: '',
       },
       volunteer: {
-        title: 'No volunteer experience is listed yet.',
-        detail: '[TODO: add volunteer experience in src/data/content.js.]',
+        title: 'No volunteer experience is currently published.',
+        detail: '',
       },
     },
     emptyProjects: {
-      title: 'No projects are listed yet.',
-      detail:
-        '[TODO: add projects with purpose, role, technologies, contributions, and at least two screenshots in src/data/content.js.]',
+      title: 'No project records are currently published.',
+      detail: '',
     },
     differentiator: 'Latest record',
     skillsProficiency: 'Proficiency',
@@ -283,7 +262,6 @@ export const content = {
       contributions: 'Contributions',
       screenshots: 'Screenshots',
     },
-    projectScreenshotPlaceholder: '[TODO: add a project screenshot and write its alt text]',
     browserBarLabel: 'Project screenshot',
     educationLabels: {
       institution: 'School',
@@ -306,8 +284,7 @@ export const content = {
       required: 'This field is required.',
       invalidEmail: 'Enter a valid email address.',
       tooLong: 'This entry is too long.',
-      unavailable:
-        'The contact form is inactive until a professional email is added. [TODO: add contact.email in src/data/content.js.]',
+      unavailable: 'The contact form is currently unavailable.',
       hint: 'This form sends the message through the Supabase contact function and keeps the response generic.',
       opened:
         'The site opened your message request. The function will confirm success only after a server-side response.',
@@ -316,7 +293,7 @@ export const content = {
       sent: 'Your message was sent',
       genericError: 'Could not send, please try again later.',
     },
-    footerNote: 'BSIT course project · Isabela State University Cauayan',
+    footerNote: 'BSIT Student · Isabela State University – Cauayan',
     footerRights: 'Resume portfolio',
     notFound: {
       eyebrow: 'Error 404',
@@ -325,7 +302,7 @@ export const content = {
       homeLink: 'Return to the home page',
       certificatesLink: 'Browse certificates',
     },
-    emptyLabel: 'Not yet added',
+    emptyLabel: 'No published records',
     noMatchLabel: 'No match',
     viewAllCertificates: 'View all certificates',
     backToTop: 'Back to top',
@@ -360,7 +337,8 @@ const sampleScreenshots = [
   },
 ];
 
-export const sampleContent = {
+export const sampleContent = import.meta.env?.DEV
+  ? {
   ...content,
   skills: [
     sampleEntry({
@@ -596,8 +574,9 @@ export const sampleContent = {
     linkedin: 'https://example.com/sample-linkedin',
     sample: true,
   },
-};
+  }
+  : null;
 
 export function getContent(isSample) {
-  return isSample ? sampleContent : content;
+  return isSample && import.meta.env?.DEV && sampleContent ? sampleContent : content;
 }

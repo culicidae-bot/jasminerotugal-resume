@@ -1,4 +1,3 @@
-import SampleTag from '../components/SampleTag.jsx';
 import Section from '../components/Section.jsx';
 import { ExternalIcon } from '../components/Icons.jsx';
 import { isSafeHttpUrl } from '../lib/urls.js';
@@ -31,7 +30,6 @@ export default function SecuritySection({ index }) {
                   <div>
                     <h4>{profile.name}</h4>
                     <p>{profile.detail}</p>
-                    {profile.sample ? <SampleTag /> : null}
                   </div>
                   {isSafeHttpUrl(profile.url) ? (
                     <a
@@ -59,7 +57,6 @@ export default function SecuritySection({ index }) {
                   <div>
                     <h4>{writeup.title}</h4>
                     <p>{writeup.summary}</p>
-                    {writeup.sample ? <SampleTag /> : null}
                   </div>
                 </li>
               ))}

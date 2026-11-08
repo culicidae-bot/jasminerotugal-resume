@@ -1,7 +1,7 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { designSettings as fallbackDesignSettings } from './data/design.js';
-import { getContent } from './data/content.js';
+import { content } from './data/content.js';
 import { SiteContext } from './lib/site-context.js';
 import { syncThemeColor } from './lib/theme.js';
 import { applyDesignTokens, loadDesignSettings } from './lib/design-settings.js';
@@ -11,7 +11,6 @@ import {
 } from './lib/portfolio-content.js';
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
-import SampleBanner from './components/SampleBanner.jsx';
 import ScrollManager from './components/ScrollManager.jsx';
 import HomePage from './pages/HomePage.jsx';
 import CertificatesPage from './pages/CertificatesPage.jsx';
@@ -21,9 +20,8 @@ const AdminAuthPage = lazy(() => import('./pages/AdminAuthPage.jsx'));
 
 export default function App() {
   const location = useLocation();
-  const isSample = new URLSearchParams(location.search).get('sample') === '1';
   const isAdminRoute = location.pathname.startsWith('/admin');
-  const baseContent = getContent(isSample);
+  const baseContent = content;
   const [publishedContent, setPublishedContent] = useState(null);
   const [design, setDesign] = useState(fallbackDesignSettings);
 
@@ -51,13 +49,10 @@ export default function App() {
     };
   }, []);
 
-  const content = isSample
-    ? baseContent
-    : mergePublishedPortfolioContent(baseContent, publishedContent);
+  const displayedContent = mergePublishedPortfolioContent(baseContent, publishedContent);
   const site = {
-    content,
+    content: displayedContent,
     design,
-    isSample,
     onPublishedContentChange: setPublishedContent,
     onDesignChange: setDesign,
   };
@@ -91,7 +86,6 @@ export default function App() {
             </a>
             <ScrollManager />
             <Header />
-            <SampleBanner />
             <main id="main" tabIndex="-1">
               <Routes>
                 <Route path="/" element={<HomePage />} />

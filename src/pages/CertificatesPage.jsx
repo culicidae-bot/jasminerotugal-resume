@@ -1,16 +1,16 @@
 import { useEffect, useId, useRef } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import EmptyState from '../components/EmptyState.jsx';
 import ImageSlot from '../components/ImageSlot.jsx';
-import SampleTag from '../components/SampleTag.jsx';
 import Seo from '../components/Seo.jsx';
 import TodoText from '../components/TodoText.jsx';
 import { CertificateStatus, CertificateType } from '../components/CertificateSignals.jsx';
 import { ExternalIcon } from '../components/Icons.jsx';
 import { deriveCertificateStatus, filterCertificates } from '../lib/certificates.js';
 import { formatDate } from '../lib/format.js';
-import { isSafeHttpsUrl, sampledPath } from '../lib/urls.js';
+import { isSafeHttpsUrl } from '../lib/urls.js';
 import { useSite } from '../lib/site-context.js';
+import { isPublicCertificate } from '../lib/public-sections.js';
 
 function CertificateDialog({ certificate, dialogRef, closeRef, onClose }) {
   const { content } = useSite();
@@ -34,7 +34,6 @@ function CertificateDialog({ certificate, dialogRef, closeRef, onClose }) {
           </button>
           <p className="page-kicker">{content.ui.dialogDetails}</p>
           <h2 id="certificate-dialog-title">{certificate.title}</h2>
-          {certificate.sample ? <SampleTag /> : null}
           <div className="dialog-signals">
             <CertificateType type={certificate.type} />
             <CertificateStatus certificate={certificate} />
@@ -95,7 +94,7 @@ function CertificateDialog({ certificate, dialogRef, closeRef, onClose }) {
 }
 
 export default function CertificatesPage() {
-  const { content, isSample } = useSite();
+  const { content } = useSite();
   const [searchParams, setSearchParams] = useSearchParams();
   const dialogRef = useRef(null);
   const closeRef = useRef(null);
@@ -107,8 +106,11 @@ export default function CertificatesPage() {
   const requestedType = searchParams.get('type') || '';
   const type = content.certificateTypes.includes(requestedType) ? requestedType : '';
   const openId = searchParams.get('cert') || '';
-  const filtered = filterCertificates(content.certificates, query, type);
-  const openCertificate = content.certificates.find((certificate) => certificate.id === openId);
+  const certificates = content.certificates.filter(isPublicCertificate);
+  const filtered = filterCertificates(certificates, query, type);
+  const openCertificate = certificates.find((certificate) => certificate.id === openId);
+
+  if (!certificates.length) return <Navigate to="/" replace />;
 
   function updateParam(key, value, replace = true) {
     const next = new URLSearchParams(searchParams);
@@ -175,12 +177,12 @@ export default function CertificatesPage() {
           {content.ui.certificateRegisterHeading}
         </h1>
         <p className="lead">{content.ui.certificateRegisterIntro}</p>
-        <Link className="text-link" to={sampledPath('/', isSample)}>
+        <Link className="text-link" to="/">
           {content.ui.backToHome}
         </Link>
       </header>
 
-      {content.certificates.length === 0 ? (
+      {certificates.length === 0 ? (
         <EmptyState
           title={content.ui.emptyCertificateRegister.title}
           detail={content.ui.emptyCertificateRegister.detail}
@@ -263,7 +265,6 @@ export default function CertificatesPage() {
                           >
                             {certificate.title}
                           </button>
-                          {certificate.sample ? <SampleTag /> : null}
                         </td>
                         <td data-label={content.ui.tableHeaders.type}>
                           <CertificateType type={certificate.type} />

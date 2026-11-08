@@ -61,7 +61,7 @@ export const presets = {
 };
 
 export const designSettings = {
-  activePreset: 'graphite-violet',
+  activePreset: 'midnight',
   lightPreset: 'ivory-light',
   colorOverrides: {
     primary: null,
@@ -72,8 +72,8 @@ export const designSettings = {
     scale: 'editorial',
   },
   heroVariant: 'split',
-  contentWidth: 'wide',
-  sectionSpacing: 'roomy',
+  contentWidth: 'standard',
+  sectionSpacing: 'compact',
   sectionOrder: [
     'hero',
     'about',

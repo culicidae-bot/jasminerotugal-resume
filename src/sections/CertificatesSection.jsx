@@ -1,19 +1,20 @@
 import { Link } from 'react-router-dom';
-import EmptyState from '../components/EmptyState.jsx';
 import ImageSlot from '../components/ImageSlot.jsx';
-import SampleTag from '../components/SampleTag.jsx';
 import Section from '../components/Section.jsx';
 import TodoText from '../components/TodoText.jsx';
 import { CertificateStatus, CertificateType } from '../components/CertificateSignals.jsx';
 import { formatDate } from '../lib/format.js';
 import { latestCertificates } from '../lib/certificates.js';
-import { sampledPath } from '../lib/urls.js';
 import { useSite } from '../lib/site-context.js';
+import { isPublicCertificate } from '../lib/public-sections.js';
 
 export default function CertificatesSection({ index }) {
-  const { content, design, isSample } = useSite();
+  const { content, design } = useSite();
   const section = content.sections.certificates;
-  const certificates = latestCertificates(content.certificates, 4);
+  const certificates = latestCertificates(
+    content.certificates.filter(isPublicCertificate),
+    4,
+  );
 
   return (
     <Section
@@ -23,19 +24,11 @@ export default function CertificatesSection({ index }) {
       intro={section.intro}
       index={index}
     >
-      {certificates.length === 0 ? (
-        <EmptyState
-          title={content.ui.emptyCertificates.title}
-          detail={content.ui.emptyCertificates.detail}
-        />
-      ) : (
+      {certificates.length ? (
         <ul className="certificate-list" data-layout={design.certificatesLayout}>
           {certificates.map((certificate) => {
             const date = formatDate(certificate.dateEarned);
-            const target = sampledPath(
-              `/certificates?cert=${encodeURIComponent(certificate.id)}`,
-              isSample,
-            );
+            const target = `/certificates?cert=${encodeURIComponent(certificate.id)}`;
             return (
               <li key={certificate.id}>
                 <Link className="certificate-row" to={target}>
@@ -56,7 +49,6 @@ export default function CertificatesSection({ index }) {
                   ) : null}
                   <span className="certificate-main">
                     <span className="certificate-title">{certificate.title}</span>
-                    {certificate.sample ? <SampleTag /> : null}
                     <span className="certificate-issuer">
                       <TodoText value={certificate.issuer} />
                     </span>
@@ -77,12 +69,14 @@ export default function CertificatesSection({ index }) {
             );
           })}
         </ul>
-      )}
-      <div className="section-footer">
-        <Link className="text-link" to={sampledPath('/certificates', isSample)}>
-          {content.ui.viewAllCertificates}
-        </Link>
-      </div>
+      ) : null}
+      {certificates.length ? (
+        <div className="section-footer">
+          <Link className="text-link" to="/certificates">
+            {content.ui.viewAllCertificates}
+          </Link>
+        </div>
+      ) : null}
     </Section>
   );
 }
