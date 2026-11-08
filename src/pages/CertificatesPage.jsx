@@ -61,7 +61,13 @@ function CertificateDialog({ certificate, dialogRef, closeRef, onClose }) {
           </dl>
           <div className="dialog-document">
             {certificate.publicFile ? (
-              <ImageSlot image={certificate.publicFile} kind="certificate" />
+              certificate.publicFile.mimeType === 'application/pdf' ? (
+                <a className="button button-secondary" href={certificate.publicFile.src} target="_blank" rel="noopener noreferrer">
+                  Open certificate PDF
+                </a>
+              ) : (
+                <ImageSlot image={certificate.publicFile} kind="certificate" />
+              )
             ) : (
               <p className="asset-note">{content.ui.noDocument}</p>
             )}

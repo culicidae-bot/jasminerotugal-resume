@@ -2,9 +2,22 @@ import { designSettings as fallbackDesignSettings } from '../data/design.js';
 import { getSupabaseClient } from './supabase.js';
 
 const allowedFonts = ['editorial', 'modern', 'mono'];
-const allowedThemes = ['dark', 'light'];
-const allowedWidths = ['narrow', 'wide', 'full'];
-const allowedSpacings = ['compact', 'roomy', 'spacious'];
+const allowedThemes = ['graphite-violet', 'midnight', 'ivory-light'];
+const allowedWidths = ['narrow', 'standard', 'wide'];
+const allowedSpacings = ['compact', 'roomy', 'airy'];
+const databaseDesignKeys = [
+  'theme_mode',
+  'font_scale',
+  'content_width',
+  'section_spacing',
+  'section_padding',
+  'background_color',
+  'surface_color',
+  'primary_color',
+  'text_color',
+  'hero_variant',
+  'font_url',
+];
 const clampValue = (value, min, max) => Math.min(Math.max(Number(value) || 0, min), max);
 
 export function sanitizeHex(value, fallback = '#000000') {
@@ -21,7 +34,7 @@ export function sanitizeFont(value) {
 
 export function sanitizeTheme(value) {
   const next = String(value ?? '').toLowerCase();
-  return allowedThemes.includes(next) ? next : 'dark';
+  return allowedThemes.includes(next) ? next : fallbackDesignSettings.activePreset;
 }
 
 export function sanitizeNumber(value, min, max, fallback) {
@@ -63,6 +76,9 @@ export function normalizeDatabaseDesign(raw = {}) {
   settings.sectionSpacing = allowedSpacings.includes(String(parsed.section_spacing ?? ''))
     ? String(parsed.section_spacing)
     : settings.sectionSpacing;
+  settings.heroVariant = ['split', 'centered', 'cover'].includes(String(parsed.hero_variant ?? ''))
+    ? String(parsed.hero_variant)
+    : settings.heroVariant;
 
   const background = sanitizeHex(parsed.background_color, '#121116');
   const surface = sanitizeHex(parsed.surface_color, '#1A1920');
@@ -77,26 +93,41 @@ export function normalizeDatabaseDesign(raw = {}) {
       primary,
       text,
     },
-    padding: sanitizeNumber(parsed.section_padding ?? parsed.padding, 12, 120, 24),
+    padding: sanitizeNumber(parsed.section_padding ?? parsed.padding, 40, 160, 88),
+    fontUrl: sanitizeFontUrl(parsed.font_url),
   };
 }
 
-function applyFontFace(fontName, fontUrl) {
-  if (typeof document === 'undefined' || !fontName || !fontUrl) return;
-  const existing = document.head.querySelector(`style[data-font-name="${CSS.escape(fontName)}"]`);
-  if (existing) return;
+function sanitizeFontUrl(value) {
+  if (typeof value !== 'string' || !value) return null;
+  try {
+    const url = new URL(value);
+    const configuredOrigin = (import.meta.env.VITE_SUPABASE_URL ?? '').replace(/\/$/, '');
+    if (
+      url.protocol !== 'https:' ||
+      !configuredOrigin ||
+      url.origin !== new URL(configuredOrigin).origin ||
+      !url.pathname.startsWith('/storage/v1/object/public/public-media/portfolio/')
+    ) {
+      return null;
+    }
+    return url.href;
+  } catch {
+    return null;
+  }
+}
 
-  const style = document.createElement('style');
-  style.dataset.fontName = fontName;
-  document.head.appendChild(style);
+async function applyUploadedFont(fontUrl) {
+  if (typeof document === 'undefined' || !fontUrl || typeof FontFace === 'undefined') return;
+  if (document.fonts.check('16px PortfolioUploaded')) return;
 
-  const fontFace = new FontFace(fontName, `url('${fontUrl}') format('woff2')`);
-  fontFace.load().then(() => {
-    document.fonts.add(fontFace);
-    style.textContent = `@font-face { font-family: "${fontName}"; src: url('${fontUrl}') format('woff2'); }`;
-  }).catch(() => {
-    style.remove();
-  });
+  try {
+    const fontFace = new FontFace('PortfolioUploaded', `url(${JSON.stringify(fontUrl)})`);
+    const loadedFont = await fontFace.load();
+    document.fonts.add(loadedFont);
+  } catch {
+    return;
+  }
 }
 
 export function applyDesignTokens(raw = fallbackDesignSettings) {
@@ -111,19 +142,22 @@ export function applyDesignTokens(raw = fallbackDesignSettings) {
   root.style.setProperty('--color-primary', palette.primary || '#6D3FD8');
   root.style.setProperty('--color-text', palette.text || '#ECEAF2');
   root.style.setProperty('--site-content-width', settings.contentWidth === 'full' ? '100%' : settings.contentWidth === 'narrow' ? '72rem' : '88rem');
-  root.style.setProperty('--site-section-spacing', `${String(settings.padding || 24)}px`);
+  const spacingMultiplier = settings.sectionSpacing === 'compact' ? 0.75 : settings.sectionSpacing === 'airy' ? 1.3 : 1;
+  root.style.setProperty('--site-section-spacing', `${String(Math.min(160, Math.max(40, settings.padding * spacingMultiplier)))}px`);
   root.style.setProperty('--font-scale', settings.typography.scale || 'editorial');
   root.style.setProperty('--theme-mode', settings.activePreset || 'dark');
   root.dataset.theme = sanitizeTheme(settings.activePreset);
 
-  const fontName = typeof raw?.font_family === 'string' ? raw.font_family : null;
-  const fontUrl = typeof raw?.font_url === 'string' ? raw.font_url : null;
-  if (fontName && fontUrl) {
-    applyFontFace(fontName, fontUrl);
-    root.style.setProperty('--font-family', fontName);
-  } else {
-    root.style.setProperty('--font-family', settings.typography.scale === 'mono' ? 'ui-monospace, SFMono-Regular, monospace' : 'Georgia, "Times New Roman", serif');
-  }
+  const fontFamily = settings.fontUrl
+    ? '"PortfolioUploaded", Georgia, "Times New Roman", serif'
+    : settings.typography.scale === 'modern'
+      ? 'ui-sans-serif, system-ui, sans-serif'
+      : settings.typography.scale === 'mono'
+        ? 'ui-monospace, SFMono-Regular, monospace'
+        : '"Iowan Old Style", Georgia, "Times New Roman", serif';
+  root.style.setProperty('--font-serif', fontFamily);
+  root.style.setProperty('--font-sans', fontFamily);
+  if (settings.fontUrl) void applyUploadedFont(settings.fontUrl);
 
   return settings;
 }
@@ -133,7 +167,11 @@ export async function loadDesignSettings() {
   if (!supabase) return fallbackDesignSettings;
 
   try {
-    const { data, error } = await supabase.from('site_settings').select('key, value').eq('published', true);
+    const { data, error } = await supabase
+      .from('site_settings')
+      .select('key, value')
+      .eq('published', true)
+      .in('key', databaseDesignKeys);
     if (error || !Array.isArray(data)) return fallbackDesignSettings;
 
     const map = {};

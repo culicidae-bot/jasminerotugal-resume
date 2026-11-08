@@ -681,20 +681,20 @@ main > .home-page > .section:first-child {
 }
 
 .section {
-  padding-top: clamp(3rem, 6.5vw, 7rem);
-  padding-bottom: clamp(3rem, 6.5vw, 7rem);
+  padding-top: var(--site-section-spacing, clamp(3rem, 6.5vw, 7rem));
+  padding-bottom: var(--site-section-spacing, clamp(3rem, 6.5vw, 7rem));
   border-top: var(--border-width) solid var(--color-border);
   scroll-margin-top: 84px;
 }
 
 .site-shell[data-spacing="compact"] .section {
-  padding-top: clamp(2.3rem, 4.5vw, 4.5rem);
-  padding-bottom: clamp(2.3rem, 4.5vw, 4.5rem);
+  padding-top: var(--site-section-spacing, clamp(2.3rem, 4.5vw, 4.5rem));
+  padding-bottom: var(--site-section-spacing, clamp(2.3rem, 4.5vw, 4.5rem));
 }
 
 .site-shell[data-spacing="airy"] .section {
-  padding-top: clamp(4rem, 9vw, 10rem);
-  padding-bottom: clamp(4rem, 9vw, 10rem);
+  padding-top: var(--site-section-spacing, clamp(4rem, 9vw, 10rem));
+  padding-bottom: var(--site-section-spacing, clamp(4rem, 9vw, 10rem));
 }
 
 .section-heading {

@@ -5,6 +5,10 @@ import { getContent } from './data/content.js';
 import { SiteContext } from './lib/site-context.js';
 import { syncThemeColor } from './lib/theme.js';
 import { applyDesignTokens, loadDesignSettings } from './lib/design-settings.js';
+import {
+  loadPublishedPortfolioContent,
+  mergePublishedPortfolioContent,
+} from './lib/portfolio-content.js';
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import SampleBanner from './components/SampleBanner.jsx';
@@ -18,13 +22,18 @@ const AdminAuthPage = lazy(() => import('./pages/AdminAuthPage.jsx'));
 export default function App() {
   const location = useLocation();
   const isSample = new URLSearchParams(location.search).get('sample') === '1';
-  const content = getContent(isSample);
+  const isAdminRoute = location.pathname.startsWith('/admin');
+  const baseContent = getContent(isSample);
+  const [publishedContent, setPublishedContent] = useState(null);
   const [design, setDesign] = useState(fallbackDesignSettings);
 
   useEffect(() => {
     syncThemeColor();
 
     let cancelled = false;
+    loadPublishedPortfolioContent().then((savedContent) => {
+      if (!cancelled) setPublishedContent(savedContent);
+    });
     loadDesignSettings()
       .then((settings) => {
         if (cancelled) return;
@@ -42,7 +51,16 @@ export default function App() {
     };
   }, []);
 
-  const site = { content, design, isSample };
+  const content = isSample
+    ? baseContent
+    : mergePublishedPortfolioContent(baseContent, publishedContent);
+  const site = {
+    content,
+    design,
+    isSample,
+    onPublishedContentChange: setPublishedContent,
+    onDesignChange: setDesign,
+  };
 
   return (
     <SiteContext.Provider value={site}>
@@ -55,16 +73,8 @@ export default function App() {
         data-border={design.borderStyle}
         data-type={design.typography.scale}
       >
-        <a className="skip-link" href="#main">
-          {content.ui.skipToContent}
-        </a>
-        <ScrollManager />
-        <Header />
-        <SampleBanner />
-        <main id="main" tabIndex="-1">
+        {isAdminRoute ? (
           <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/certificates" element={<CertificatesPage />} />
             <Route
               path="/admin"
               element={
@@ -73,10 +83,25 @@ export default function App() {
                 </Suspense>
               }
             />
-            <Route path="*" element={<NotFoundPage />} />
           </Routes>
-        </main>
-        <Footer />
+        ) : (
+          <>
+            <a className="skip-link" href="#main">
+              {content.ui.skipToContent}
+            </a>
+            <ScrollManager />
+            <Header />
+            <SampleBanner />
+            <main id="main" tabIndex="-1">
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/certificates" element={<CertificatesPage />} />
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
+            </main>
+            <Footer />
+          </>
+        )}
       </div>
     </SiteContext.Provider>
   );

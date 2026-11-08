@@ -22,6 +22,21 @@ export function isSafeHttpsUrl(value) {
 
 export function isSafeImagePath(value) {
   if (typeof value !== 'string' || CONTROL_CHARACTERS.test(value)) return false;
+  if (isSafeHttpUrl(value)) {
+    const configuredSupabaseUrl = (import.meta.env.VITE_SUPABASE_URL ?? '').trim();
+    if (!configuredSupabaseUrl) return false;
+    try {
+      const imageUrl = new URL(value);
+      const projectUrl = new URL(configuredSupabaseUrl);
+      return (
+        imageUrl.protocol === 'https:' &&
+        imageUrl.origin === projectUrl.origin &&
+        imageUrl.pathname.startsWith('/storage/v1/object/public/public-media/portfolio/')
+      );
+    } catch {
+      return false;
+    }
+  }
   if (!value.startsWith('/') || value.startsWith('//')) return false;
   if (value.includes('\\')) return false;
   return !/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(value);

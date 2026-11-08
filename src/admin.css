@@ -1,0 +1,344 @@
+.admin-auth,
+.admin-dashboard {
+  width: min(100% - 2rem, 76rem);
+  margin: 3rem auto;
+  color: var(--color-text);
+}
+
+.admin-auth {
+  max-width: 34rem;
+  min-height: 60vh;
+  display: grid;
+  align-content: center;
+}
+
+.admin-card,
+.editor-section,
+.record-card {
+  border: 1px solid var(--color-border);
+  border-radius: 0.8rem;
+  background: var(--color-surface);
+  padding: clamp(1rem, 3vw, 2rem);
+}
+
+.admin-card h1,
+.admin-dashboard h1,
+.admin-dashboard h2 {
+  margin-top: 0;
+}
+
+.admin-kicker {
+  color: var(--color-primary);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-field {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0 0 1rem;
+}
+
+.admin-field label,
+.mfa-setup label {
+  font-weight: 650;
+}
+
+.admin-field input,
+.admin-field textarea,
+.admin-field select,
+.mfa-setup input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: 0.4rem;
+  background: var(--color-bg);
+  color: var(--color-text);
+  padding: 0.65rem 0.75rem;
+  font: inherit;
+}
+
+.admin-field textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+.admin-field input[type="file"] {
+  padding: 0.45rem;
+}
+
+.admin-field input[type="color"] {
+  width: 4rem;
+  min-height: 44px;
+  padding: 0.25rem;
+}
+
+.admin-field small,
+.admin-upload-row small {
+  color: var(--color-muted);
+}
+
+.field-error {
+  margin: 0;
+  color: var(--color-error);
+}
+
+.admin-button,
+.admin-tab {
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: 0.45rem;
+  background: var(--color-raised);
+  color: var(--color-text);
+  padding: 0.65rem 1rem;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.admin-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.admin-button-primary {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.admin-button-danger {
+  margin-top: 0.5rem;
+  border-color: var(--color-error);
+}
+
+.admin-status {
+  border-left: 3px solid var(--color-primary);
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  overflow-wrap: anywhere;
+}
+
+.mfa-setup {
+  display: grid;
+  justify-items: start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.mfa-qr {
+  width: min(12rem, 100%);
+  aspect-ratio: 1;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  padding: 0.5rem;
+}
+
+.admin-dashboard-header,
+.editor-section-heading,
+.admin-publish-bar,
+.admin-upload-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.admin-dashboard-header {
+  margin-bottom: 1.5rem;
+}
+
+.admin-dashboard-header h1 {
+  margin-bottom: 0.35rem;
+}
+
+.admin-dashboard-header p:last-child {
+  color: var(--color-muted);
+  margin-bottom: 0;
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0.25rem 0 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin-tab {
+  flex: 0 0 auto;
+}
+
+.admin-tab.is-active {
+  border-color: var(--color-primary);
+  box-shadow: inset 0 -3px var(--color-primary);
+}
+
+.editor-section > p {
+  color: var(--color-muted);
+}
+
+.admin-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 1rem;
+}
+
+.admin-form-grid > .record-card {
+  align-self: start;
+}
+
+.record-card {
+  min-width: 0;
+  margin: 0;
+}
+
+.record-card legend {
+  padding: 0 0.4rem;
+  font-weight: 700;
+}
+
+.record-list,
+.editor-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.record-list {
+  margin-top: 1rem;
+}
+
+.record-list .record-card {
+  margin: 0;
+}
+
+.admin-empty {
+  border: 1px dashed var(--color-border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.admin-upload-row {
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  margin: 1.25rem 0;
+}
+
+.admin-upload {
+  display: grid;
+  gap: 0.5rem;
+  min-height: 44px;
+  border: 1px dashed var(--color-border);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  cursor: pointer;
+}
+
+.admin-upload span {
+  font-weight: 650;
+}
+
+.admin-upload input {
+  max-width: 100%;
+}
+
+.admin-photo-preview {
+  width: 8rem;
+  height: 10rem;
+  border-radius: 0.5rem;
+  object-fit: cover;
+  background: var(--color-raised);
+}
+
+.uploaded-file-list {
+  display: grid;
+  gap: 0.5rem;
+  padding-left: 1.25rem;
+}
+
+.uploaded-file-list li {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.text-button {
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--color-link);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.admin-color-field {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+.admin-color-field label {
+  grid-column: 1 / -1;
+}
+
+.admin-color-field code {
+  color: var(--color-muted);
+}
+
+.admin-publish-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  margin-top: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-bg);
+  padding: 0.75rem 1rem;
+}
+
+.admin-publish-bar p {
+  margin: 0;
+  color: var(--color-muted);
+}
+
+.admin-publish-bar > div {
+  display: flex;
+  gap: 0.5rem;
+}
+
+@media (max-width: 700px) {
+  .admin-auth,
+  .admin-dashboard {
+    width: min(100% - 1.25rem, 76rem);
+    margin: 1rem auto;
+  }
+
+  .admin-dashboard-header,
+  .editor-section-heading,
+  .admin-publish-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-publish-bar > div {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .admin-publish-bar .admin-button {
+    padding-inline: 0.5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-dashboard *,
+  .admin-auth * {
+    scroll-behavior: auto !important;
+  }
+}

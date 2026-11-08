@@ -34,6 +34,18 @@ The settings above are standard Supabase Auth features and do not depend on priv
 
 The owner must create the `app_owner` row and enable MFA in the dashboard before the app is used in production. The database should reject any write or unpublished read when the session is not `aal2`.
 
+After creating and confirming the owner account in Authentication → Users and applying `001_core_schema.sql`, register that Auth user as the owner in the SQL editor. Replace the placeholder with the exact account email:
+
+```sql
+insert into public.app_owner (id)
+select id
+from auth.users
+where lower(email) = lower('OWNER_EMAIL')
+on conflict (id) do nothing;
+```
+
+Run this using the Supabase SQL editor as the project database administrator, then sign in to `/admin` and complete TOTP enrollment. Do not run this for an email that is not the intended owner account.
+
 ## 3) Security and storage checklist
 
 - Keep storage bucket names as `originals` and `public-media`.
@@ -74,3 +86,9 @@ Copy `.env.example` to a local `.env` file and replace the placeholders with the
 - SQL editor → run migration files in order
 
 This repository ships the migration order as files under `supabase/migrations/`, and the edge function lives in `supabase/functions/contact/`.
+
+## 7) Portfolio editor and public media
+
+The private editor is available at `/admin`. After signing in and completing TOTP verification, it lets the owner edit the profile, skills, certificates, eligibility, experience, education, projects, and visual settings. Use **Save draft** to keep changes private; **Publish to recruiters** makes the saved portfolio content public.
+
+The photo, project screenshots, certificate documents, resume PDF, and optional WOFF2 font are uploaded to the `public-media` bucket and are publicly retrievable by URL. Only upload assets intended for public display. The client enforces 2 MB for each image/font and 10 MB for a PDF; the bucket enforces a 10 MB maximum. Each project must have at least two screenshots before publishing. For the editor to work, apply `004_portfolio_media.sql` after migrations `001`–`003`, create/register the owner account, and configure the public Supabase URL and key in the frontend environment.

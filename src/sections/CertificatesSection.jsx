@@ -42,7 +42,11 @@ export default function CertificatesSection({ index }) {
                   {design.certificatesLayout === 'thumbnails' ? (
                     <span className="certificate-thumb">
                       {certificate.publicFile ? (
-                        <ImageSlot image={certificate.publicFile} kind="certificate-thumb" />
+                        certificate.publicFile.mimeType === 'application/pdf' ? (
+                          <span className="certificate-thumb-empty">PDF</span>
+                        ) : (
+                          <ImageSlot image={certificate.publicFile} kind="certificate-thumb" />
+                        )
                       ) : (
                         <span className="certificate-thumb-empty">
                           {content.ui.noCopyShort}
