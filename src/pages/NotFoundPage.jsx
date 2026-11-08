@@ -1,0 +1,29 @@
+import { Link } from 'react-router-dom';
+import Seo from '../components/Seo.jsx';
+import { sampledPath } from '../lib/urls.js';
+import { useSite } from '../lib/site-context.js';
+
+export default function NotFoundPage() {
+  const { content, isSample } = useSite();
+  const copy = content.ui.notFound;
+
+  return (
+    <article className="not-found">
+      <Seo title={content.meta.notFoundTitle} description={content.meta.notFoundDescription} />
+      <p className="page-kicker">{copy.eyebrow}</p>
+      <p className="not-found-number" aria-hidden="true">
+        404
+      </p>
+      <h1>{copy.title}</h1>
+      <p className="lead">{copy.detail}</p>
+      <div className="page-actions">
+        <Link className="button button-primary" to={sampledPath('/', isSample)}>
+          {copy.homeLink}
+        </Link>
+        <Link className="button button-secondary" to={sampledPath('/certificates', isSample)}>
+          {copy.certificatesLink}
+        </Link>
+      </div>
+    </article>
+  );
+}

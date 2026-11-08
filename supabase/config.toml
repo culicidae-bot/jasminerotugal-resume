@@ -1,0 +1,3 @@
+[functions.contact]
+verify_jwt = false
+entrypoint = "functions/contact/index.js"
