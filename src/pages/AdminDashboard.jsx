@@ -424,6 +424,8 @@ export default function AdminDashboard({ onLogout }) {
   const [activeTab, setActiveTab] = useState('profile');
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
+  const [loadState, setLoadState] = useState('loading');
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [isPublished, setIsPublished] = useState(false);
   const [needsAssetCleanup, setNeedsAssetCleanup] = useState(false);
   const [cleanupPaths, setCleanupPaths] = useState([]);
@@ -436,23 +438,41 @@ export default function AdminDashboard({ onLogout }) {
 
   useEffect(() => {
     let active = true;
-    Promise.all([loadPortfolioDraft(), loadPendingPublicAssetCleanupWithClient()])
-      .then(([{ content: saved, published, cleanupNeeded }, pendingCleanupPaths]) => {
+    async function loadAdminContent() {
+      setLoadState('loading');
+      setStatus('');
+      try {
+        const { content: saved, published, cleanupNeeded } = await loadPortfolioDraft();
         if (!active) return;
         const loadedDraft = saved ? mergePublishedPortfolioContent(content, saved) : clone(content);
         setDraft(loadedDraft);
         setSavedDraft(clone(loadedDraft));
         setIsPublished(published);
-        setCleanupPaths(pendingCleanupPaths);
-        setNeedsAssetCleanup(cleanupNeeded || pendingCleanupPaths.length > 0);
-      })
-      .catch((error) => {
-        if (active) setStatus(`Could not load saved content: ${error.message}`);
-      });
+        setNeedsAssetCleanup(Boolean(cleanupNeeded));
+        setLoadState('ready');
+
+        try {
+          const pendingCleanupPaths = await loadPendingPublicAssetCleanupWithClient();
+          if (!active) return;
+          setCleanupPaths(pendingCleanupPaths);
+          setNeedsAssetCleanup(Boolean(cleanupNeeded) || pendingCleanupPaths.length > 0);
+        } catch (error) {
+          if (active) {
+            setStatus(`Content loaded, but asset cleanup status could not be checked: ${error.message}`);
+          }
+        }
+      } catch (error) {
+        if (!active) return;
+        setLoadState('error');
+        setStatus(`Could not load saved content: ${error.message}`);
+      }
+    }
+
+    loadAdminContent();
     return () => {
       active = false;
     };
-  }, []);
+  }, [loadAttempt]);
 
   useEffect(() => {
     let timer;
@@ -670,6 +690,28 @@ export default function AdminDashboard({ onLogout }) {
         <button className="admin-button" type="button" onClick={onLogout}>Log out of all devices</button>
       </header>
 
+      {loadState !== 'ready' ? (
+        <section className="editor-section" aria-labelledby="admin-load-title">
+          <h2 id="admin-load-title">
+            {loadState === 'loading' ? 'Loading saved portfolio' : 'Could not load saved portfolio'}
+          </h2>
+          <p role="status" aria-live="polite">
+            {loadState === 'loading'
+              ? 'Your saved content is loading. Editing and publishing are paused until it is ready.'
+              : status}
+          </p>
+          {loadState === 'error' ? (
+            <button
+              className="admin-button admin-button-primary"
+              type="button"
+              onClick={() => setLoadAttempt((current) => current + 1)}
+            >
+              Retry loading
+            </button>
+          ) : null}
+        </section>
+      ) : (
+        <>
       <nav className="admin-tabs" aria-label="Portfolio editor sections">
         {tabs.map(([id, label]) => (
           <button
@@ -887,6 +929,8 @@ export default function AdminDashboard({ onLogout }) {
         </footer>
       ) : null}
       {status ? <p className="admin-status" role="status" aria-live="polite">{status}</p> : null}
+        </>
+      )}
     </main>
   );
 }

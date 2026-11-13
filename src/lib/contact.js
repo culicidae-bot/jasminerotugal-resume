@@ -28,7 +28,19 @@ export function validateContact(input) {
   };
 }
 
-export async function submitContactMessage({ name, email, message, subject }) {
+function configuredContactUrl() {
+  return (
+    import.meta.env?.VITE_CONTACT_FUNCTION_URL ||
+    (import.meta.env?.VITE_SUPABASE_URL
+      ? `${String(import.meta.env.VITE_SUPABASE_URL).replace(/\/$/, '')}/functions/v1/contact`
+      : '')
+  );
+}
+
+export async function submitContactMessage(
+  { name, email, message, subject, fallbackEmail },
+  { endpoint = configuredContactUrl(), fetcher = fetch } = {},
+) {
   const payload = {
     name: stripLineBreaks(name),
     email: stripLineBreaks(email),
@@ -37,23 +49,20 @@ export async function submitContactMessage({ name, email, message, subject }) {
     honeypot: '',
   };
 
-  const url =
-    import.meta.env.VITE_CONTACT_FUNCTION_URL ||
-    (import.meta.env.VITE_SUPABASE_URL
-      ? `${String(import.meta.env.VITE_SUPABASE_URL).replace(/\/$/, '')}/functions/v1/contact`
-      : '');
+  const fallback = () => {
+    const mailto = buildMailto({ to: fallbackEmail, ...payload });
+    if (!mailto) return { ok: false, status: 'error' };
+    return { ok: false, status: 'email-draft', mailto };
+  };
 
-  if (!url) {
-    return { ok: false, status: 'missing-config' };
-  }
-
+  if (!endpoint) return fallback();
   try {
     const payloadText = JSON.stringify(payload);
     if (new TextEncoder().encode(payloadText).length > 10000) {
       return { ok: false, status: 'too-large' };
     }
 
-    const response = await fetch(url, {
+    const response = await fetcher(endpoint, {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -63,17 +72,20 @@ export async function submitContactMessage({ name, email, message, subject }) {
     });
 
     if (!response.ok) {
-      return { ok: false, status: 'error' };
+      return response.status >= 500
+        ? fallback()
+        : { ok: false, status: 'error' };
     }
 
-    const data = await response.json().catch(() => ({ ok: true }));
+    const data = await response.json().catch(() => null);
+    if (data?.ok !== true) return { ok: false, status: 'error' };
     return {
-      ok: Boolean(data.ok ?? response.ok),
-      status: data.ok === false ? 'error' : 'success',
+      ok: true,
+      status: 'success',
       data,
     };
   } catch {
-    return { ok: false, status: 'network-error' };
+    return fallback();
   }
 }
 

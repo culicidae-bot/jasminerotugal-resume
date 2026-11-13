@@ -26,8 +26,12 @@ function EducationRow({ record }) {
           ) : null}
           {record.yearGraduated && !isTodo(record.yearGraduated) ? (
             <>
-              <dt>{labels.year}</dt>
-              <dd>{record.yearGraduated}</dd>
+              <dt>
+                {String(record.yearGraduated).startsWith('Expected ')
+                  ? labels.expectedGraduation
+                  : labels.year}
+              </dt>
+              <dd>{String(record.yearGraduated).replace(/^Expected\s+/, '')}</dd>
             </>
           ) : null}
           {record.achievement ? (

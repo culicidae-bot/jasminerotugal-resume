@@ -54,7 +54,7 @@ export default function ResumeButton() {
     return (
       <div className="resume-action">
         <a
-          className="button button-secondary"
+          className="button button-primary"
           href={resume.path}
           download="RotugalJasmine.pdf"
         >

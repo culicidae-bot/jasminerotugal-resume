@@ -8,7 +8,7 @@ export default function Section({ id, label, title, intro, index, children }) {
           <span>{label}</span>
         </p>
         <h2 id={sectionId}>{title}</h2>
-        <p className="section-intro">{intro}</p>
+        {intro ? <p className="section-intro">{intro}</p> : null}
       </div>
       <div className="section-content">{children}</div>
     </section>

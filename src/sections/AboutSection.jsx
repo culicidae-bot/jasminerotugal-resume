@@ -13,17 +13,21 @@ export default function AboutSection({ index }) {
     <Section id="about" label={section.label} title={section.title} intro={section.intro} index={index}>
       <div className={`about-grid${hasImage ? ' has-media' : ''}`}>
         <div className="about-copy">
-          <p className="lead">{content.about.introduction}</p>
+          {content.about.introduction ? (
+            <p className="lead">{content.about.introduction}</p>
+          ) : null}
           <div className="text-block">
             <h3>{labels.careerObjective}</h3>
             <p>{content.about.careerObjective}</p>
           </div>
-          <div className="text-block">
-            <h3>{labels.educationBackground}</h3>
-            <p>
-              <TodoText value={content.about.educationSummary} />
-            </p>
-          </div>
+          {content.about.educationSummary ? (
+            <div className="text-block">
+              <h3>{labels.educationBackground}</h3>
+              <p>
+                <TodoText value={content.about.educationSummary} />
+              </p>
+            </div>
+          ) : null}
           <div className="text-block">
             <h3>{labels.interests}</h3>
             <ul className="hairline-list">

@@ -196,6 +196,17 @@ test('saved profile and null education values load into the admin form', () => {
   assert.equal(merged.education.secondary.institution, 'Secondary School');
 });
 
+test('invalid saved portfolio content fails closed instead of loading fallback content', async () => {
+  const client = createStorageClient([
+    { key: 'portfolio_content_draft', value: '{invalid', published: false },
+  ]);
+
+  await assert.rejects(
+    loadPortfolioDraftWithClient(client),
+    /Saved portfolio content is invalid JSON/,
+  );
+});
+
 test('Save Draft persists edits for reload without changing published content', async () => {
   const publishedValue = JSON.stringify({ hero: { name: 'Public Name' } });
   const client = createStorageClient([

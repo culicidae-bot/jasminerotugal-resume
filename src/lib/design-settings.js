@@ -1,4 +1,8 @@
-import { designSettings as fallbackDesignSettings } from '../data/design.js';
+import {
+  designSettings as fallbackDesignSettings,
+  presets,
+  resolvePresetColors,
+} from '../data/design.js';
 import { getSupabaseClient } from './supabase.js';
 
 const allowedFonts = ['editorial', 'modern', 'mono'];
@@ -130,23 +134,58 @@ async function applyUploadedFont(fontUrl) {
   }
 }
 
-export function applyDesignTokens(raw = fallbackDesignSettings) {
+function normalizedDesign(raw) {
+  if (raw?.palette && raw?.activePreset && raw?.typography) return raw;
+  return normalizeDatabaseDesign(raw);
+}
+
+function storedTheme() {
+  try {
+    const saved = window.localStorage.getItem('jasmine-theme');
+    return saved === 'light' || saved === 'dark' ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
+export function applyDesignTokens(raw = fallbackDesignSettings, requestedTheme) {
   const root = typeof document !== 'undefined' ? document.documentElement : null;
-  if (!root) return normalizeDatabaseDesign(raw);
+  if (!root) return normalizedDesign(raw);
 
-  const settings = normalizeDatabaseDesign(raw);
-  const palette = settings.palette || {};
+  const settings = normalizedDesign(raw);
+  const savedTheme = storedTheme();
+  const theme = requestedTheme === 'light' || requestedTheme === 'dark'
+    ? requestedTheme
+    : savedTheme || (settings.activePreset === 'ivory-light' ? 'light' : 'dark');
+  const activeDarkPreset = presets[settings.activePreset]?.mode === 'dark'
+    ? settings.activePreset
+    : fallbackDesignSettings.activePreset;
+  const activePreset = theme === 'light'
+    ? settings.lightPreset
+    : activeDarkPreset;
+  const colors = resolvePresetColors(activePreset).colors;
+  const customPalette = theme === 'dark' && presets[settings.activePreset]?.mode === 'dark'
+    ? settings.palette
+    : {};
 
-  root.style.setProperty('--color-bg', palette.background || '#121116');
-  root.style.setProperty('--color-surface', palette.surface || '#1A1920');
-  root.style.setProperty('--color-primary', palette.primary || '#6D3FD8');
-  root.style.setProperty('--color-text', palette.text || '#ECEAF2');
+  root.style.setProperty('--color-bg', customPalette.background || colors.bg);
+  root.style.setProperty('--color-surface', customPalette.surface || colors.surface);
+  root.style.setProperty('--color-raised', colors.raised);
+  root.style.setProperty('--color-border', colors.border);
+  root.style.setProperty('--color-primary', customPalette.primary || colors.primary);
+  root.style.setProperty('--color-on-primary', colors.onPrimary);
+  root.style.setProperty('--color-text', customPalette.text || colors.text);
+  root.style.setProperty('--color-muted', colors.muted);
+  root.style.setProperty('--color-link', colors.link);
+  root.style.setProperty('--color-success', colors.success);
+  root.style.setProperty('--color-warning', colors.warning);
+  root.style.setProperty('--color-error', colors.error);
   root.style.setProperty('--site-content-width', settings.contentWidth === 'full' ? '100%' : settings.contentWidth === 'narrow' ? '72rem' : '88rem');
   const spacingMultiplier = settings.sectionSpacing === 'compact' ? 0.75 : settings.sectionSpacing === 'airy' ? 1.3 : 1;
   root.style.setProperty('--site-section-spacing', `${String(Math.min(160, Math.max(40, settings.padding * spacingMultiplier)))}px`);
   root.style.setProperty('--font-scale', settings.typography.scale || 'editorial');
-  root.style.setProperty('--theme-mode', settings.activePreset || 'dark');
-  root.dataset.theme = sanitizeTheme(settings.activePreset);
+  root.style.setProperty('--theme-mode', theme);
+  root.dataset.theme = theme;
 
   const fontFamily = settings.fontUrl
     ? '"PortfolioUploaded", Georgia, "Times New Roman", serif'
@@ -156,7 +195,7 @@ export function applyDesignTokens(raw = fallbackDesignSettings) {
         ? 'ui-monospace, SFMono-Regular, monospace'
         : '"Iowan Old Style", Georgia, "Times New Roman", serif';
   root.style.setProperty('--font-serif', fontFamily);
-  root.style.setProperty('--font-sans', fontFamily);
+  root.style.setProperty('--font-sans', 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif');
   if (settings.fontUrl) void applyUploadedFont(settings.fontUrl);
 
   return settings;

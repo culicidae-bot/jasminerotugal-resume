@@ -27,8 +27,7 @@ export default function AdminAuthPage() {
   useEffect(() => {
     let active = true;
     if (!supabase) {
-      setMode('login');
-      setStatus('Admin access is unavailable until Supabase is configured.');
+      setMode('unavailable');
       return () => {
         active = false;
       };
@@ -244,12 +243,37 @@ export default function AdminAuthPage() {
   if (mode === 'checking') {
     return <main className="admin-auth"><p role="status">Checking admin session…</p></main>;
   }
+  if (mode === 'unavailable') {
+    return (
+      <main className="admin-auth">
+        <section className="admin-card" aria-labelledby="admin-title">
+          <p className="admin-kicker">Setup required</p>
+          <h1 id="admin-title">Admin is not connected</h1>
+          <p role="alert">
+            This build is missing its Supabase project URL or public anon key. The sign-in form
+            cannot work until the project owner configures both values for this environment and
+            rebuilds or redeploys the site.
+          </p>
+          <p>
+            Configure <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code>.
+            Never use a service-role key in the browser.
+          </p>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="admin-auth">
       <section className="admin-card" aria-labelledby="admin-title">
         <p className="admin-kicker">Private area</p>
         <h1 id="admin-title">Admin sign in</h1>
+        {mode === 'login' ? (
+          <p>
+            Use the Supabase Auth account registered as this portfolio’s owner. Admin access also
+            requires authenticator verification; Supabase project access alone does not grant it.
+          </p>
+        ) : null}
         {mode === 'login' && (
           <form onSubmit={handleLogin} noValidate>
             <div className="admin-field">

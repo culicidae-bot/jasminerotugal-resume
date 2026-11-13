@@ -1,5 +1,11 @@
-export function readTheme() {
-  return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+export function readTheme(fallback = 'dark') {
+  try {
+    const saved = window.localStorage.getItem('jasmine-theme');
+    if (saved === 'light' || saved === 'dark') return saved;
+  } catch (error) {
+    return fallback === 'light' ? 'light' : 'dark';
+  }
+  return fallback === 'light' ? 'light' : 'dark';
 }
 
 export function applyTheme(theme) {

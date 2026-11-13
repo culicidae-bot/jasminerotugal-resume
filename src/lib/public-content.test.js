@@ -26,10 +26,41 @@ test('public fallback content contains no template instructions or fictional rec
 
 test('public profile uses only the supplied identity, study, and career focus', () => {
   assert.equal(content.hero.name, 'Jasmine L. Rotugal');
-  assert.equal(content.hero.title, 'Aspiring Cybersecurity and Network Security Professional');
-  assert.match(content.hero.focus, /current .* student/i);
-  assert.equal(content.education.tertiary.institution, 'Isabela State University – Cauayan');
-  assert.equal(content.education.tertiary.yearGraduated, null);
+  assert.equal(
+    content.hero.title,
+    'BSIT Student | Aspiring Cybersecurity and Network Security Professional',
+  );
+  assert.match(content.hero.focus, /BSIT student at Isabela State University – Cauayan Campus/i);
+  assert.match(content.hero.focus, /cybersecurity and network security/i);
+  assert.match(content.hero.focus, /PacketCapture CTF/i);
+  assert.match(content.about.introduction, /public social media posts/i);
+  assert.equal(content.sections.about.title, 'About');
+  assert.equal(content.sections.about.intro, '');
+  assert.equal(content.sections.education.title, 'Education');
+  assert.equal(content.sections.education.intro, '');
+  assert.equal(
+    content.about.careerObjective,
+    'To build a career in cybersecurity and network security by applying my information technology education and continuing to learn.',
+  );
+  assert.equal(content.education.tertiary.institution, 'Isabela State University – Cauayan Campus');
+  assert.equal(
+    content.education.tertiary.course,
+    'Bachelor of Science in Information Technology (BSIT)',
+  );
+  assert.equal(content.education.tertiary.yearGraduated, 'Expected 2027');
+});
+
+test('public certificate and contact copy is accurate and avoids backend details', () => {
+  assert.equal(content.ui.statusLabels['issuer-verifiable'], 'Verification link available');
+  assert.equal(content.ui.statusLabels['document-on-file'], 'Document on file');
+  assert.equal(content.ui.statusLabels['self-reported'], 'Self-reported');
+  assert.match(content.ui.statusDescriptions['issuer-verifiable'], /does not independently confirm/i);
+  assert.equal(content.ui.portraitPlaceholder, 'Portrait photograph not provided');
+  assert.doesNotMatch(content.ui.contactLabels.hint, /supabase|backend|server|api/i);
+  assert.equal(
+    content.ui.contactLabels.emailDraft,
+    'Your email app should open with a draft. Nothing is sent until you press send.',
+  );
 });
 
 test('downloadable resume is a real one-page text PDF', () => {

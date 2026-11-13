@@ -27,7 +27,7 @@ def build_resume():
         bottomMargin=0.62 * inch,
         title="Jasmine L. Rotugal - Resume",
         author="Jasmine L. Rotugal",
-        subject="Information Technology Student",
+        subject="BSIT student focused on cybersecurity and network security",
     )
     base = getSampleStyleSheet()
     styles = {
@@ -93,45 +93,37 @@ def build_resume():
     story = [
         Paragraph("Jasmine L. Rotugal", styles["name"]),
         Paragraph(
-            "BSIT Student &nbsp;|&nbsp; Aspiring Cybersecurity and Network Security Professional",
+            "BSIT Student | Aspiring Cybersecurity and Network Security Professional",
             styles["headline"],
         ),
         HRFlowable(width="100%", thickness=1.2, color=ACCENT, spaceAfter=10),
         Paragraph("PROFESSIONAL SUMMARY", styles["heading"]),
         Paragraph(
-            "Bachelor of Science in Information Technology student at Isabela State University "
-            "– Cauayan, with a career focus on cybersecurity and network security.",
+            "BSIT student at Isabela State University – Cauayan Campus focusing on cybersecurity "
+            "and network security. I took part in the PacketCapture CTF and solved an OSINT "
+            "challenge by following clues from an image through public social media posts.",
             styles["body"],
         ),
         Paragraph("CAREER OBJECTIVE", styles["heading"]),
         Paragraph(
-            "Build a career in cybersecurity and network security by continuing to develop "
-            "knowledge through information technology education and future professional opportunities.",
+            "To build a career in cybersecurity and network security by applying my information "
+            "technology education and continuing to learn.",
             styles["body"],
         ),
         Paragraph("EDUCATION", styles["heading"]),
-        Paragraph("Isabela State University – Cauayan", styles["institution"]),
+        Paragraph("Isabela State University – Cauayan Campus", styles["institution"]),
         Paragraph(
-            "Bachelor of Science in Information Technology (BSIT) &nbsp;|&nbsp; Expected 2027",
+            "Bachelor of Science in Information Technology (BSIT)",
             styles["detail"],
         ),
+        Paragraph("Expected graduation: 2027", styles["detail"]),
         Paragraph("AREAS OF INTEREST", styles["heading"]),
-        Paragraph("Cybersecurity &nbsp;•&nbsp; Network security", styles["body"]),
+        Paragraph("Cybersecurity and network security", styles["body"]),
         Spacer(1, 8),
         HRFlowable(width="100%", thickness=0.5, color=colors.HexColor("#C8D1DE")),
     ]
 
-    def draw_page(canvas, doc):
-        canvas.saveState()
-        canvas.setTitle("Jasmine L. Rotugal - Resume")
-        canvas.setAuthor("Jasmine L. Rotugal")
-        canvas.setFont("Helvetica", 8)
-        canvas.setFillColor(MUTED)
-        canvas.drawString(doc.leftMargin, 0.38 * inch, "Jasmine L. Rotugal")
-        canvas.drawRightString(letter[0] - doc.rightMargin, 0.38 * inch, "Resume · 2027")
-        canvas.restoreState()
-
-    document.build(story, onFirstPage=draw_page, onLaterPages=draw_page)
+    document.build(story)
     print(f"Generated {OUTPUT}")
 
 

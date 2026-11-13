@@ -3,7 +3,7 @@ export const content = {
     siteName: 'Jasmine L. Rotugal',
     homeTitle: 'Jasmine L. Rotugal — BSIT Student',
     homeDescription:
-      'Resume portfolio of Jasmine L. Rotugal, a BSIT student at Isabela State University Cauayan focused on cybersecurity and network security.',
+      'Resume portfolio of Jasmine L. Rotugal, a BSIT student at Isabela State University – Cauayan Campus focused on cybersecurity and network security.',
     certificatesTitle: 'Certificates — Jasmine L. Rotugal',
     certificatesDescription:
       'Certificate register for Jasmine L. Rotugal, including type, issuer, date earned, and the source of each record.',
@@ -17,11 +17,11 @@ export const content = {
     { label: 'Contact', to: '/#contact' },
   ],
   hero: {
-    eyebrow: 'BSIT Student · Isabela State University – Cauayan',
+    eyebrow: '',
     name: 'Jasmine L. Rotugal',
-    title: 'Aspiring Cybersecurity and Network Security Professional',
+    title: 'BSIT Student | Aspiring Cybersecurity and Network Security Professional',
     focus:
-      'I am a current Bachelor of Science in Information Technology student at Isabela State University – Cauayan, focused on a future in cybersecurity and network security.',
+      'BSIT student at Isabela State University – Cauayan Campus, focusing on cybersecurity and network security. I took part in the PacketCapture CTF and solved an OSINT challenge by following clues from an image through public social media posts.',
     whoami: '',
     portrait: {
       src: null,
@@ -43,8 +43,8 @@ export const content = {
   sections: {
     about: {
       label: 'Professional profile',
-      title: 'A clear direction in information security.',
-      intro: 'An introduction to Jasmine and her professional goals.',
+      title: 'About',
+      intro: '',
     },
     skills: {
       label: 'Skills',
@@ -73,8 +73,8 @@ export const content = {
     },
     education: {
       label: 'Education',
-      title: 'Education.',
-      intro: 'Current tertiary education.',
+      title: 'Education',
+      intro: '',
     },
     security: {
       label: 'Security focus',
@@ -83,18 +83,18 @@ export const content = {
     },
     contact: {
       label: 'Contact',
-      title: 'Let’s connect.',
-      intro: 'Use the contact form to send a message.',
+      title: 'Contact',
+      intro: 'For professional inquiries and conversations about cybersecurity and network security.',
     },
   },
   about: {
     introduction:
-      'I am a Bachelor of Science in Information Technology student at Isabela State University – Cauayan, preparing for a career focused on cybersecurity and network security.',
+      'I’m a BSIT student at Isabela State University – Cauayan Campus, focusing on cybersecurity and network security. I took part in the PacketCapture CTF and solved an OSINT challenge by following clues from an image through public social media posts. I’m working toward a career in cybersecurity and network security.',
     careerObjective:
-      'Develop a career in cybersecurity and network security by building on my information technology education and continuing to learn.',
+      'To build a career in cybersecurity and network security by applying my information technology education and continuing to learn.',
     educationSummary:
-      'Bachelor of Science in Information Technology student at Isabela State University – Cauayan.',
-    interests: ['Cybersecurity', 'Network security'],
+      'Bachelor of Science in Information Technology (BSIT), Isabela State University – Cauayan Campus.',
+    interests: ['Cybersecurity and network security'],
     image: {
       src: null,
       alt: '',
@@ -117,9 +117,9 @@ export const content = {
   education: {
     tertiary: {
       level: 'Tertiary',
-      institution: 'Isabela State University – Cauayan',
-      course: 'BSIT, Bachelor of Science in Information Technology',
-      yearGraduated: null,
+      institution: 'Isabela State University – Cauayan Campus',
+      course: 'Bachelor of Science in Information Technology (BSIT)',
+      yearGraduated: 'Expected 2027',
       achievement: null,
     },
     secondary: {
@@ -152,22 +152,23 @@ export const content = {
     primaryNavigation: 'Primary navigation',
     siteNavigation: 'Site',
     externalLinkNote: 'opens in a new tab',
-    themeToLight: 'Switch to light theme',
-    themeToDark: 'Switch to dark theme',
-    themeLightShort: 'Light theme',
-    themeDarkShort: 'Dark theme',
-    viewProfile: 'Explore profile',
+    themeToLight: 'Switch to light view',
+    themeToDark: 'Switch to dark view',
+    themeLightShort: 'Switch to light view',
+    themeDarkShort: 'Switch to dark view',
+    viewProjects: 'View projects',
     downloadResume: 'Download resume',
     resumeChecking: 'Checking resume file…',
     resumeUnavailable: 'The resume PDF could not be loaded.',
     resumeAvailable: 'PDF resume',
+    portraitPlaceholder: 'Portrait photograph not provided',
     statusLabels: {
-      'issuer-verifiable': 'Issuer-verifiable',
+      'issuer-verifiable': 'Verification link available',
       'document-on-file': 'Document on file',
       'self-reported': 'Self-reported',
     },
     statusDescriptions: {
-      'issuer-verifiable': 'A public HTTPS verification link is recorded.',
+      'issuer-verifiable': 'A public HTTPS verification link is available. The link does not independently confirm the credential.',
       'document-on-file': 'A redacted copy is recorded, without a public verification link.',
       'self-reported': 'No public verification link or document is recorded.',
     },
@@ -200,7 +201,7 @@ export const content = {
     dateEarnedLabel: 'Date earned',
     typeLabel: 'Type',
     statusLabel: 'Status',
-    verificationLink: 'Open issuer verification',
+    verificationLink: 'Open verification link',
     noVerificationLink: 'No public verification link',
     noDocument: 'No redacted certificate copy is recorded.',
     emptyCertificateRegister: {
@@ -267,34 +268,33 @@ export const content = {
       institution: 'School',
       course: 'Course',
       year: 'Year graduated',
+      expectedGraduation: 'Expected graduation',
       achievement: 'Achievement',
     },
     securityProfilesTitle: 'Lab and CTF profiles',
     securityWriteupsTitle: 'Write-ups',
     openProfile: 'Open profile',
     contactLabels: {
-      email: 'Professional email',
+      email: 'Email',
       github: 'GitHub',
       linkedin: 'LinkedIn',
-      formTitle: 'Contact form',
+      formTitle: 'Send a message',
       name: 'Name',
       message: 'Message',
       submit: 'Send message',
+      submitting: 'Sending…',
       emailField: 'Email',
       required: 'This field is required.',
       invalidEmail: 'Enter a valid email address.',
       tooLong: 'This entry is too long.',
-      unavailable: 'The contact form is currently unavailable.',
-      hint: 'This form sends the message through the Supabase contact function and keeps the response generic.',
-      opened:
-        'The site opened your message request. The function will confirm success only after a server-side response.',
-      mailtoBlocked:
-        'The message could not be sent because the contact function is not configured.',
-      sent: 'Your message was sent',
-      genericError: 'Could not send, please try again later.',
+      unavailable: 'Contact information is not currently available.',
+      hint: 'Share a few details so your message can be reviewed.',
+      emailDraft: 'Your email app should open with a draft. Nothing is sent until you press send.',
+      openEmailDraft: 'Open email draft',
+      sent: 'Message sent.',
+      genericError: 'Your message could not be sent. Please try again later.',
     },
-    footerNote: 'BSIT Student · Isabela State University – Cauayan',
-    footerRights: 'Resume portfolio',
+    contactInvitation: 'For professional inquiries, please use the form below.',
     notFound: {
       eyebrow: 'Error 404',
       title: 'This page is not in the record.',
@@ -308,6 +308,7 @@ export const content = {
     backToTop: 'Back to top',
     backToHome: 'Back to the home page',
     footerNavigation: 'Footer navigation',
+    professionalLinks: 'Professional links',
     opensNewTab: 'opens in a new tab',
     brandDetail: 'BSIT · ISU Cauayan',
     filterEmptyDetail: 'Adjust the search text or choose a different type.',

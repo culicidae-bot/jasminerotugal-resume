@@ -505,16 +505,17 @@ export async function loadPortfolioDraftWithClient(client) {
     !published &&
     collectPublicAssetPaths(rows.filter((item) => item.key === CONTENT_KEY || item.key === DRAFT_KEY)).size > 0;
 
+  let content;
   try {
-    const content = JSON.parse(row.value);
-    return {
-      content: content && typeof content === 'object' && !Array.isArray(content) ? content : null,
-      published,
-      cleanupNeeded,
-    };
+    content = JSON.parse(row.value);
   } catch {
-    return { content: null, published, cleanupNeeded };
+    throw new Error('Saved portfolio content is invalid JSON. Restore a valid backup before editing.');
   }
+  if (!content || typeof content !== 'object' || Array.isArray(content)) {
+    throw new Error('Saved portfolio content has an invalid format. Restore a valid backup before editing.');
+  }
+
+  return { content, published, cleanupNeeded };
 }
 
 export async function loadPortfolioDraft() {
