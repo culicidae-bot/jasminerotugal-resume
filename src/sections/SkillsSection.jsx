@@ -1,7 +1,6 @@
-import { useState } from 'react';
 import Section from '../components/Section.jsx';
 import { getSkillProficiency } from '../lib/public-sections.js';
-import { selectFeatured, FEATURED_LIMITS, priorityOf } from '../lib/prioritize.js';
+import { priorityOf } from '../lib/prioritize.js';
 import { useSite } from '../lib/site-context.js';
 
 const SKILL_CATEGORY_ORDER = [
@@ -29,10 +28,7 @@ function proficiencyText(skill) {
 export default function SkillsSection({ index }) {
   const { content } = useSite();
   const section = content.sections.skills;
-  const [expanded, setExpanded] = useState(false);
-  const skills = content.skills || [];
-  const shown = expanded ? skills : selectFeatured(skills, FEATURED_LIMITS.skills);
-  const ordered = [...shown].sort(
+  const ordered = [...(content.skills || [])].sort(
     (a, b) =>
       skillCategoryRank(a.category) - skillCategoryRank(b.category) ||
       priorityOf(a) - priorityOf(b) ||
@@ -56,20 +52,6 @@ export default function SkillsSection({ index }) {
           );
         })}
       </ul>
-      {skills.length > FEATURED_LIMITS.skills ? (
-        <div className="section-footer">
-          <button
-            type="button"
-            className="button-quiet text-link view-all-button"
-            aria-expanded={expanded}
-            onClick={() => setExpanded((current) => !current)}
-          >
-            {expanded
-              ? content.ui.showFewer
-              : `${content.ui.viewAllSkills} (${skills.length})`}
-          </button>
-        </div>
-      ) : null}
     </Section>
   );
 }
