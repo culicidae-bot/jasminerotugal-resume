@@ -45,8 +45,8 @@ export const content = {
   sections: {
     about: {
       label: 'Professional profile',
-      title: 'About',
-      intro: '',
+      title: 'A clear direction in information security.',
+      intro: 'An introduction to Jasmine and her professional goals.',
     },
     skills: {
       label: 'Skills',
@@ -75,8 +75,8 @@ export const content = {
     },
     education: {
       label: 'Education',
-      title: 'Education',
-      intro: '',
+      title: 'Education.',
+      intro: 'Current tertiary education.',
     },
     security: {
       label: 'Security focus',
@@ -85,8 +85,8 @@ export const content = {
     },
     contact: {
       label: 'Contact',
-      title: 'Contact',
-      intro: 'For professional inquiries and conversations about cybersecurity and network security.',
+      title: 'Let’s connect.',
+      intro: 'Use the contact form to send a message.',
     },
   },
   about: {
@@ -155,8 +155,9 @@ export const content = {
     externalLinkNote: 'opens in a new tab',
     themeToLight: 'Switch to light view',
     themeToDark: 'Switch to dark view',
-    themeLightShort: 'Switch to light view',
-    themeDarkShort: 'Switch to dark view',
+    themeLightShort: 'Light theme',
+    themeDarkShort: 'Dark theme',
+    viewProfile: 'Explore profile',
     viewProjects: 'View projects',
     downloadResume: 'Download resume',
     resumeChecking: 'Checking resume file…',
@@ -302,13 +303,16 @@ export const content = {
       tooLong: 'This entry is too long.',
       unavailable: 'Contact information is not currently available.',
       detailsUnavailable: 'Direct contact details have not been published yet. You can still send a message using the form.',
-      hint: 'Share a few details so your message can be reviewed.',
+      hint: 'Please include your name, email, and a short message so I can respond.',
       emailDraft: 'Your email app should open with a draft. Nothing is sent until you press send.',
       openEmailDraft: 'Open email draft',
       sent: 'Your message was received. Thank you.',
       genericError: 'Your message could not be sent. Please try again later.',
     },
-    contactInvitation: 'For professional inquiries, please use the form below.',
+    contactInvitation: 'Have a question or an opportunity? Send me a message.',
+    brandDetail: 'BSIT · ISU Cauayan',
+    footerNote: 'BSIT Student · Isabela State University – Cauayan',
+    footerRights: 'Resume portfolio',
     notFound: {
       eyebrow: 'Error 404',
       title: 'This page is not in the record.',
