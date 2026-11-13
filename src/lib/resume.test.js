@@ -52,7 +52,7 @@ function sampleContent() {
       { id: 'c3', title: 'Sample Achievement', type: 'Achievement', issuer: 'Sample Tournament', dateEarned: '2026-03-01' },
     ],
     eligibility: [
-      { id: 'e1', title: 'Sample Eligibility', issuer: 'Sample Board', dateConferred: '2026-03-10' },
+      { id: 'e1', title: 'Sample Eligibility', issuer: 'Sample Board', dateConferred: '2026-03-10', status: 'Completed' },
     ],
     heroPortrait: undefined,
   };
