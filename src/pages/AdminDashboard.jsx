@@ -21,7 +21,7 @@ import {
   unpublishPortfolioContent,
   uploadPortfolioAsset,
 } from '../lib/portfolio-content.js';
-import { getSupabaseClient, getSupabaseConfigIssue } from '../lib/supabase.js';
+import { getSupabaseClient } from '../lib/supabase.js';
 import {
   FEATURED_LIMITS,
   RESUME_SOFT_LIMITS,
@@ -32,6 +32,7 @@ import {
   splitRecords,
 } from '../lib/prioritize.js';
 import { getResumePageCount, planResumeSections } from '../lib/resume.js';
+import { userFacingMessage, successMessages } from '../lib/messages.js';
 import BatchImportWorkspace from '../components/BatchImportWorkspace.jsx';
 
 const ACHIEVEMENT_TYPES = ['Achievement', 'Award'];
@@ -950,18 +951,13 @@ export default function AdminDashboard({ onLogout }) {
           setNeedsAssetCleanup(Boolean(cleanupNeeded) || pendingCleanupPaths.length > 0);
         } catch (error) {
           if (active) {
-            setStatus(`Content loaded, but asset cleanup status could not be checked: ${error.message}`);
+            setStatus(userFacingMessage(error, 'cleanup'));
           }
         }
       } catch (error) {
         if (!active) return;
-        const issue = getSupabaseConfigIssue();
         setLoadState('error');
-        setStatus(
-          issue
-            ? `Could not load saved content: Supabase is not configured — ${issue}.`
-            : `Could not load saved content: ${error.message}`,
-        );
+        setStatus(userFacingMessage(error, 'load'));
       }
     }
 
@@ -999,13 +995,9 @@ export default function AdminDashboard({ onLogout }) {
       await savePortfolioDraft(draft);
       setSavedDraft(clone(draft));
       setContentUpdatedAt(new Date().toISOString());
-      setStatus(
-        isPublished
-          ? 'Draft saved. Your current published portfolio remains visible until you publish or unpublish.'
-          : 'Draft saved. It is not visible to recruiters until you publish it.',
-      );
+      setStatus(successMessages.draftSaved);
     } catch (error) {
-      setStatus(`Could not save draft: ${error.message}`);
+      setStatus(userFacingMessage(error, 'save'));
     } finally {
       setBusy(false);
     }
@@ -1036,13 +1028,9 @@ export default function AdminDashboard({ onLogout }) {
       onPublishedContentChange(publishedContent);
       setCleanupPaths(cleanupCandidates);
       setNeedsAssetCleanup(cleanupCandidates.length > 0);
-      setStatus(
-        warnings.length
-          ? `Portfolio published with cleanup warnings: ${warnings.join(' ')}`
-          : 'Your portfolio updates are published.',
-      );
+      setStatus(warnings.length ? `Published successfully. ${warnings.length} item${warnings.length === 1 ? '' : 's'} need attention — you can retry the cleanup below.` : successMessages.published);
     } catch (error) {
-      setStatus(`Could not publish changes: ${error.message}`);
+      setStatus(userFacingMessage(error, 'publish'));
     } finally {
       setBusy(false);
     }
@@ -1063,13 +1051,13 @@ export default function AdminDashboard({ onLogout }) {
       onPublishedContentChange(null);
       setStatus(
         cleanupError
-          ? `Portfolio is unpublished, but cleanup did not finish: ${cleanupError.message}${cleanupCandidates.length ? ` ${cleanupCandidates.length} public asset(s) remain queued and may still be accessible.` : ''}`
+          ? 'Your portfolio is no longer public. Some cleanup tasks remain — you can retry below.'
           : retainedPaths.length
-            ? `Portfolio unpublished. ${retainedPaths.length} asset(s) remain public because other published content references them.`
-            : 'Portfolio unpublished and unreferenced public assets removed.',
+            ? 'Your portfolio is no longer public. Some media remain referenced by other content.'
+            : successMessages.unpublished,
       );
     } catch (error) {
-      setStatus(`Could not unpublish portfolio content: ${error.message}`);
+      setStatus(userFacingMessage(error, 'unpublish'));
     } finally {
       setBusy(false);
     }
@@ -1089,13 +1077,13 @@ export default function AdminDashboard({ onLogout }) {
       setNeedsAssetCleanup(pendingPaths.length > 0);
       setStatus(
         pendingPaths.length
-          ? `${pendingPaths.length} public asset(s) remain queued for cleanup.`
+          ? 'Some cleanup is still in progress. You can retry again shortly.'
           : retainedPaths.length
-            ? `Cleanup is complete. ${retainedPaths.length} asset(s) remain public because other published content references them.`
-            : 'Unreferenced public assets have been removed.',
+            ? 'Cleanup is complete. Some assets remain referenced by published content.'
+            : 'Cleanup is complete.',
       );
     } catch (error) {
-      setStatus(`Could not remove unreferenced public assets: ${error.message}`);
+      setStatus(userFacingMessage(error, 'cleanup'));
     } finally {
       setBusy(false);
     }
@@ -1120,11 +1108,11 @@ export default function AdminDashboard({ onLogout }) {
       onDesignChange(nextDesign);
       setStatus(
         cleanupError
-          ? `Design settings published, but some old public assets could not be removed: ${cleanupError.message}`
+          ? 'Design saved and published, but some older assets could not be removed. You can retry the cleanup below.'
           : 'Design settings saved and published.',
       );
     } catch (error) {
-      setStatus(`Could not save design settings: ${error.message}`);
+      setStatus(userFacingMessage(error, 'design'));
     } finally {
       setBusy(false);
     }
@@ -1142,19 +1130,19 @@ export default function AdminDashboard({ onLogout }) {
       loading: 'eager',
     });
     setDraft(next);
-    setStatus('Photo uploaded. Publish your portfolio to show it to recruiters.');
+    setStatus(successMessages.photoUploaded);
   }
 
   async function uploadResume(file) {
     const url = await uploadPortfolioAsset(file, { kind: 'resume' });
     setDraft((current) => ({ ...current, resumePath: url }));
-    setStatus('Resume uploaded. Publish your portfolio to make the new file available.');
+    setStatus(successMessages.resumeUploaded);
   }
 
   async function uploadFont(file) {
     const url = await uploadPortfolioAsset(file, { kind: 'font' });
     setDesignDraft((current) => ({ ...current, font_url: url }));
-    setStatus('Font uploaded. Save design settings to apply it.');
+    setStatus(successMessages.fontUploaded);
   }
 
   function updateDesign(key, value) {
@@ -1237,7 +1225,7 @@ export default function AdminDashboard({ onLogout }) {
         {loadState !== 'ready' ? (
           <section className="editor-section" aria-labelledby="admin-load-title">
             <h2 id="admin-load-title">
-              {loadState === 'loading' ? 'Loading saved portfolio' : 'Could not load saved portfolio'}
+              {loadState === 'loading' ? 'Loading your saved portfolio…' : 'We couldn’t load your saved portfolio'}
             </h2>
             <p role="status" aria-live="polite">
               {loadState === 'loading'
@@ -1352,7 +1340,7 @@ export default function AdminDashboard({ onLogout }) {
             next.certificates = certs;
             setDraft(next);
             setEditRevision((current) => current + 1);
-            setStatus(`Imported ${approved.length - skipped} record${approved.length - skipped === 1 ? '' : 's'} into the draft${skipped ? ` (${skipped} duplicate skipped)` : ''}. Save and publish when you are ready.`);
+            setStatus(successMessages.imported);
             setActiveTab('certificates');
           }}
         />
@@ -1406,16 +1394,16 @@ export default function AdminDashboard({ onLogout }) {
       ) : null}
 
       {activeTab === 'skills' ? (
-        <RecordListEditor key={`skills-${editRevision}`} addLabel="Add skill" title="Skills" path="skills" draft={draft} fields={listFields.skills} onChange={setDraft} onUploadError={setStatus} onEditingChange={reportRecordEditing} emptyTitle="No skills yet. Add the ones you can genuinely substantiate." />
+        <RecordListEditor key={`skills-${editRevision}`} addLabel="Add skill" title="Skills" path="skills" draft={draft} fields={listFields.skills} onChange={setDraft} onUploadError={(error) => setStatus(userFacingMessage(error, 'upload'))} onEditingChange={reportRecordEditing} emptyTitle="No skills yet. Add the ones you can genuinely substantiate." />
       ) : null}
       {activeTab === 'certificates' ? (
-        <RecordListEditor key={`certificates-${editRevision}`} addLabel="Add certificate" title="Certificates" path="certificates" draft={draft} fields={listFields.certificates} onChange={setDraft} onUploadError={setStatus} onEditingChange={reportRecordEditing} allowCertificateFile recordFilter={CERTIFICATE_FILTER} emptyTitle="No certificates yet. Add certificates with their issuing organization and date." />
+        <RecordListEditor key={`certificates-${editRevision}`} addLabel="Add certificate" title="Certificates" path="certificates" draft={draft} fields={listFields.certificates} onChange={setDraft} onUploadError={(error) => setStatus(userFacingMessage(error, 'upload'))} onEditingChange={reportRecordEditing} allowCertificateFile recordFilter={CERTIFICATE_FILTER} emptyTitle="No certificates yet. Add certificates with their issuing organization and date." />
       ) : null}
       {activeTab === 'achievements' ? (
-        <RecordListEditor key={`achievements-${editRevision}`} addLabel="Add achievement" title="Achievements" path="certificates" draft={draft} fields={listFields.achievements} onChange={setDraft} onUploadError={setStatus} onEditingChange={reportRecordEditing} allowCertificateFile recordFilter={ACHIEVEMENT_FILTER} fixedType="Achievement" emptyTitle="No achievements yet. Add genuine awards or recognitions only." />
+        <RecordListEditor key={`achievements-${editRevision}`} addLabel="Add achievement" title="Achievements" path="certificates" draft={draft} fields={listFields.achievements} onChange={setDraft} onUploadError={(error) => setStatus(userFacingMessage(error, 'upload'))} onEditingChange={reportRecordEditing} allowCertificateFile recordFilter={ACHIEVEMENT_FILTER} fixedType="Achievement" emptyTitle="No achievements yet. Add genuine awards or recognitions only." />
       ) : null}
       {activeTab === 'eligibility' ? (
-        <RecordListEditor key={`eligibility-${editRevision}`} addLabel="Add eligibility record" title="Eligibility and certifications" path="eligibility" draft={draft} fields={listFields.eligibility} onChange={setDraft} onUploadError={setStatus} onEditingChange={reportRecordEditing} emptyTitle="No eligibility records yet. Planned certifications are not shown publicly until completed." />
+        <RecordListEditor key={`eligibility-${editRevision}`} addLabel="Add eligibility record" title="Eligibility and certifications" path="eligibility" draft={draft} fields={listFields.eligibility} onChange={setDraft} onUploadError={(error) => setStatus(userFacingMessage(error, 'upload'))} onEditingChange={reportRecordEditing} emptyTitle="No eligibility records yet. Planned certifications are not shown publicly until completed." />
       ) : null}
       {activeTab === 'experience' ? (
         <div className="editor-stack">
@@ -1433,7 +1421,7 @@ export default function AdminDashboard({ onLogout }) {
               draft={draft}
               fields={listFields.experience}
               onChange={setDraft}
-              onUploadError={setStatus}
+              onUploadError={(error) => setStatus(userFacingMessage(error, 'upload'))}
               onEditingChange={reportRecordEditing}
               emptyTitle={`No ${category === 'academic' ? 'academic or CTF activities' : `${category} experience`} published yet.`}
             />
@@ -1461,7 +1449,7 @@ export default function AdminDashboard({ onLogout }) {
         </section>
       ) : null}
       {activeTab === 'projects' ? (
-        <RecordListEditor key={`projects-${editRevision}`} addLabel="Add project" title="Projects" path="projects" draft={draft} fields={listFields.projects} onChange={setDraft} onUploadError={setStatus} onEditingChange={reportRecordEditing} allowScreenshots emptyTitle="No projects yet. Add genuine academic, CTF, or personal projects with at least two screenshots each." />
+        <RecordListEditor key={`projects-${editRevision}`} addLabel="Add project" title="Projects" path="projects" draft={draft} fields={listFields.projects} onChange={setDraft} onUploadError={(error) => setStatus(userFacingMessage(error, 'upload'))} onEditingChange={reportRecordEditing} allowScreenshots emptyTitle="No projects yet. Add genuine academic, CTF, or personal projects with at least two screenshots each." />
       ) : null}
       {activeTab === 'design' ? (
         <section className="editor-section">
@@ -1538,7 +1526,7 @@ export default function AdminDashboard({ onLogout }) {
             <label className="admin-upload">
               <span>Upload WOFF2 font (optional)</span>
               <input type="file" accept=".woff2,font/woff2" onChange={(event) => {
-                if (event.target.files?.[0]) uploadFont(event.target.files[0]).catch((error) => setStatus(error.message));
+                if (event.target.files?.[0]) uploadFont(event.target.files[0]).catch((error) => setStatus(userFacingMessage(error, 'upload')));
                 event.target.value = '';
               }} />
             </label>
@@ -1576,7 +1564,7 @@ export default function AdminDashboard({ onLogout }) {
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 onChange={(event) => {
-                  if (event.target.files?.[0]) uploadProfilePhoto(event.target.files[0]).catch((error) => setStatus(error.message));
+                  if (event.target.files?.[0]) uploadProfilePhoto(event.target.files[0]).catch((error) => setStatus(userFacingMessage(error, 'upload')));
                   event.target.value = '';
                 }}
               />
@@ -1588,7 +1576,7 @@ export default function AdminDashboard({ onLogout }) {
                 type="file"
                 accept="application/pdf"
                 onChange={(event) => {
-                  if (event.target.files?.[0]) uploadResume(event.target.files[0]).catch((error) => setStatus(error.message));
+                  if (event.target.files?.[0]) uploadResume(event.target.files[0]).catch((error) => setStatus(userFacingMessage(error, 'upload')));
                   event.target.value = '';
                 }}
               />

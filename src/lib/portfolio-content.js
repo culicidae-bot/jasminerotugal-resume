@@ -1,4 +1,5 @@
 import { getSupabaseClient, getSupabaseConfigIssue } from './supabase.js';
+import { userFacingMessage } from './messages.js';
 import {
   buildResumePdf,
   RESUME_PUBLIC_URL_PATH,
@@ -108,7 +109,7 @@ export function mergePublishedPortfolioContent(base, savedContent) {
 
 function notConfiguredError() {
   const issue = getSupabaseConfigIssue();
-  return new Error(issue ? `Supabase is not configured: ${issue}.` : 'Supabase is not configured.');
+  return new Error(issue || 'The portfolio service is not available.');
 }
 
 function getOriginalPath(reference) {

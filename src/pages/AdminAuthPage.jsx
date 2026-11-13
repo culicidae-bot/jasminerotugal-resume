@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { getSupabaseClient, getSupabaseConfigIssue } from '../lib/supabase.js';
 import AdminDashboard from './AdminDashboard.jsx';
 
-const GENERIC_LOGIN_ERROR = 'Email or password is incorrect';
+const GENERIC_LOGIN_ERROR = 'Your credentials could not be verified. Please try again.';
 
 function InlineError({ message, id }) {
   if (!message) return null;
@@ -139,7 +139,7 @@ export default function AdminAuthPage() {
       return;
     }
     if (!supabase) {
-      setStatus('Admin access is unavailable until Supabase is configured.');
+      setStatus('Sign-in is temporarily unavailable. Please try again shortly.');
       return;
     }
 
@@ -252,14 +252,13 @@ export default function AdminAuthPage() {
           <h1 id="admin-title">Admin is not connected</h1>
           <p role="alert">
             {configIssue ??
-              'This build is missing its Supabase project URL or public anon key.'}
+              'The portfolio service is not available in this build.'}
           </p>
           <p>
-            This is a build-time configuration problem: the <code>VITE_SUPABASE_*</code> values must
-            be present when the site is built, not only at runtime. Configure{' '}
+            This build is missing its connection settings. Configure{' '}
             <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> for the exact
-            environment being viewed, then rebuild or redeploy. Check the deployment build logs and
-            confirm the deployment you are viewing is the latest commit.
+            environment being viewed, then rebuild or redeploy. Confirm you are viewing the latest
+            build and check the deployment logs.
           </p>
           <p>
             Never put a service-role key in the browser. If the values are set, confirm they are set
