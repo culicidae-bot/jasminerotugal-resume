@@ -27,7 +27,7 @@ export default function ThemeToggle() {
       onClick={toggleTheme}
       aria-label={theme === 'dark' ? content.ui.themeToLight : content.ui.themeToDark}
     >
-      {theme === 'dark' ? content.ui.themeLightShort : content.ui.themeDarkShort}
+      {theme === 'dark' ? content.ui.themeDarkShort : content.ui.themeLightShort}
     </button>
   );
 }
