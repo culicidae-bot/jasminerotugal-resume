@@ -1,4 +1,5 @@
 import { useId, useRef, useState } from 'react';
+import Section from '../components/Section.jsx';
 import { ExternalIcon } from '../components/Icons.jsx';
 import { submitContactMessage, validateContact } from '../lib/contact.js';
 import { mailtoSafeAddress, isSafeHttpUrl } from '../lib/urls.js';
@@ -81,6 +82,7 @@ function ContactForm({ contactEmail, hasFunction }) {
   return (
     <form className="contact-form" onSubmit={handleSubmit} noValidate>
       <h3>{labels.formTitle}</h3>
+      <p className="form-hint">{labels.hint}</p>
       <div className="field">
         <label htmlFor={`${baseId}-name`}>{labels.name}</label>
         <input
@@ -188,8 +190,9 @@ function LargeEmailLink({ email }) {
   );
 }
 
-export default function ContactSection() {
+export default function ContactSection({ index }) {
   const { content } = useSite();
+  const section = content.sections.contact;
   const labels = content.ui.contactLabels;
   const contactEmail = mailtoSafeAddress(content.contact.email);
   const github = isSafeHttpUrl(content.contact.github) ? content.contact.github : null;
@@ -199,47 +202,46 @@ export default function ContactSection() {
   const hasContactDetails = Boolean(contactEmail || github || linkedin);
 
   return (
-    <section className="section contact-section" id="contact" aria-labelledby="contact-title">
-      <div className="contact-inner">
-        <header className="contact-heading">
-          <h2 id="contact-title">Contact</h2>
-        </header>
-        <div className="contact-grid">
-          <div className="contact-details">
-            <p className="contact-invitation">{content.ui.contactInvitation}</p>
-            {contactEmail ? <LargeEmailLink email={contactEmail} /> : null}
-            {!hasContactDetails && formAvailable ? (
-              <p className="contact-empty">{labels.detailsUnavailable}</p>
-            ) : null}
-            {github || linkedin ? (
-              <nav className="contact-socials" aria-label={content.ui.professionalLinks}>
-                {github ? (
-                  <a className="contact-social-link" href={github} target="_blank" rel="noopener noreferrer">
-                    {content.contact.githubLabel}
-                    <ExternalIcon />
-                    <span className="visually-hidden"> ({content.ui.opensNewTab})</span>
-                  </a>
-                ) : null}
-                {linkedin ? (
-                  <a className="contact-social-link" href={linkedin} target="_blank" rel="noopener noreferrer">
-                    {content.contact.linkedinLabel}
-                    <ExternalIcon />
-                    <span className="visually-hidden"> ({content.ui.opensNewTab})</span>
-                  </a>
-                ) : null}
-              </nav>
-            ) : null}
-          </div>
-          {formAvailable ? (
-            <ContactForm contactEmail={contactEmail} hasFunction={hasFunction} />
-          ) : (
-            <div className="contact-unavailable">
-              <h3>{labels.formTitle}</h3>
-              <p>{labels.unavailable}</p>
-            </div>
-          )}
+    <Section
+      id="contact"
+      className="contact-section"
+      label={section.label}
+      title={section.title}
+      intro={section.intro}
+      index={index}
+    >
+      <div className="contact-grid">
+        <div className="contact-details">
+          {contactEmail ? <LargeEmailLink email={contactEmail} /> : null}
+          {!hasContactDetails && formAvailable ? (
+            <p className="contact-empty">{labels.detailsUnavailable}</p>
+          ) : null}
+          {github || linkedin ? (
+            <nav className="contact-socials" aria-label={content.ui.professionalLinks}>
+              {github ? (
+                <a className="contact-social-link" href={github} target="_blank" rel="noopener noreferrer">
+                  {content.contact.githubLabel}<ExternalIcon />
+                  <span className="visually-hidden"> ({content.ui.opensNewTab})</span>
+                </a>
+              ) : null}
+              {linkedin ? (
+                <a className="contact-social-link" href={linkedin} target="_blank" rel="noopener noreferrer">
+                  {content.contact.linkedinLabel}<ExternalIcon />
+                  <span className="visually-hidden"> ({content.ui.opensNewTab})</span>
+                </a>
+              ) : null}
+            </nav>
+          ) : null}
         </div>
+        {formAvailable ? (
+          <ContactForm contactEmail={contactEmail} hasFunction={hasFunction} />
+        ) : (
+          <div className="contact-unavailable">
+            <h3>{labels.formTitle}</h3>
+            <p>{labels.unavailable}</p>
+          </div>
+        )}
       </div>
-    </section>
+    </Section>
   );
 }
