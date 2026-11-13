@@ -13,6 +13,7 @@ import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import ScrollManager from './components/ScrollManager.jsx';
 import HomePage from './pages/HomePage.jsx';
+import CertificatesPage from './pages/CertificatesPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 
 const AdminAuthPage = lazy(() => import('./pages/AdminAuthPage.jsx'));
@@ -95,6 +96,7 @@ export default function App() {
             <main id="main" tabIndex="-1">
               <Routes>
                 <Route path="/" element={<HomePage />} />
+                <Route path="/certificates" element={<CertificatesPage />} />
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </main>

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import Seo from '../components/Seo.jsx';
 import { useSite } from '../lib/site-context.js';
+import { hasPublicSectionContent } from '../lib/public-sections.js';
 import { resolveSeo } from '../lib/seo.js';
 
 export default function NotFoundPage() {
@@ -21,6 +22,11 @@ export default function NotFoundPage() {
         <Link className="button button-primary" to="/">
           {copy.homeLink}
         </Link>
+        {hasPublicSectionContent('certificates', content) ? (
+          <Link className="button button-secondary" to="/certificates">
+            {copy.certificatesLink}
+          </Link>
+        ) : null}
       </div>
     </article>
   );
