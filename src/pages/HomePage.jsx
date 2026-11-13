@@ -4,7 +4,6 @@ import Hero from '../components/Hero.jsx';
 import AboutSection from '../sections/AboutSection.jsx';
 import SkillsSection from '../sections/SkillsSection.jsx';
 import CertificatesSection from '../sections/CertificatesSection.jsx';
-import EligibilitySection from '../sections/EligibilitySection.jsx';
 import ExperienceSection from '../sections/ExperienceSection.jsx';
 import ProjectsSection from '../sections/ProjectsSection.jsx';
 import EducationSection from '../sections/EducationSection.jsx';
@@ -17,7 +16,6 @@ const sectionComponents = {
   about: AboutSection,
   skills: SkillsSection,
   certificates: CertificatesSection,
-  eligibility: EligibilitySection,
   experience: ExperienceSection,
   projects: ProjectsSection,
   education: EducationSection,
