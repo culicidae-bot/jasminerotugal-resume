@@ -3,15 +3,15 @@ import ImageSlot from '../components/ImageSlot.jsx';
 import Section from '../components/Section.jsx';
 import TodoText from '../components/TodoText.jsx';
 import { CertificateStatus, CertificateType } from '../components/CertificateSignals.jsx';
+import CredentialSpotlight from '../components/CredentialSpotlight.jsx';
 import { formatDate } from '../lib/format.js';
-import { sortByPriority } from '../lib/prioritize.js';
+import { priorityOf, sortByPriority, splitRecords } from '../lib/prioritize.js';
 import { useSite } from '../lib/site-context.js';
 import { isPublicCertificate } from '../lib/public-sections.js';
 
 function certificateRow(certificate, content, design) {
   const date = formatDate(certificate.dateEarned);
   const target = `/certificates?cert=${encodeURIComponent(certificate.id)}`;
-
   return (
     <li key={certificate.id}>
       <Link className="certificate-row" to={target}>
@@ -20,8 +20,10 @@ function certificateRow(certificate, content, design) {
             {certificate.publicFile ? (
               certificate.publicFile.mimeType === 'application/pdf' ? (
                 <span className="certificate-thumb-empty">PDF</span>
-              ) : (
+              ) : certificate.publicFile.mimeType?.startsWith('image/') ? (
                 <ImageSlot image={certificate.publicFile} kind="certificate-thumb" />
+              ) : (
+                <span className="certificate-thumb-empty">{content.ui.noCopyShort}</span>
               )
             ) : (
               <span className="certificate-thumb-empty">{content.ui.noCopyShort}</span>
@@ -44,23 +46,41 @@ function certificateRow(certificate, content, design) {
   );
 }
 
+function CertificateList({ items, content, design }) {
+  return (
+    <ul className="certificate-list" data-layout={design.certificatesLayout}>
+      {items.map((certificate) => certificateRow(certificate, content, design))}
+    </ul>
+  );
+}
+
 export default function CertificatesSection({ index }) {
   const { content, design } = useSite();
   const section = content.sections.certificates;
-  const records = sortByPriority((content.certificates || []).filter(isPublicCertificate));
+  const publicRecords = (content.certificates || []).filter(isPublicCertificate);
+  const { certificates, achievements } = splitRecords(publicRecords);
+  const spotlight = [...publicRecords].sort(
+    (a, b) =>
+      Number(b.featured === true) - Number(a.featured === true) ||
+      priorityOf(a) - priorityOf(b),
+  );
 
   return (
-    <Section
-      id="certificates"
-      label={section.label}
-      title={section.title}
-      intro={section.intro}
-      index={index}
-    >
-      {records.length ? (
-        <ul className="certificate-list" data-layout={design.certificatesLayout}>
-          {records.map((record) => certificateRow(record, content, design))}
-        </ul>
+    <Section id="certificates" label={section.label} title={section.title} intro={section.intro} index={index}>
+      {spotlight.length ? (
+        <div className="credential-block">
+          <p className="item-label">{content.ui.featuredCredentials}</p>
+          <CredentialSpotlight records={spotlight} />
+          <div className="section-footer">
+            <Link className="text-link" to="/certificates">{content.ui.viewAllCertificates}</Link>
+          </div>
+        </div>
+      ) : null}
+      {achievements.length ? (
+        <div className="certificate-block-achievements">
+          <h3 className="sub-block-title">{content.ui.achievementsTitle}</h3>
+          <CertificateList items={sortByPriority(achievements)} content={content} design={design} />
+        </div>
       ) : null}
     </Section>
   );

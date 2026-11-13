@@ -51,14 +51,6 @@ export default function ExperienceSection({ index }) {
   const labels = content.ui.experienceLabels;
   const groups = ['work', 'internship', 'volunteer', 'academic'];
 
-  const flat = groups.flatMap((group) =>
-    (content.experience[group] || [])
-      .filter(isPublicExperience)
-      .map((item) => ({ group, item })),
-  );
-  const visible = flat;
-
-  const visibleIds = new Set(visible.filter(Boolean).map((entry) => entry.item.id ?? `${entry.item.role}-${entry.item.organization}`));
   const keyOf = (item) => item.id ?? `${item.role}-${item.organization}`;
 
   return (

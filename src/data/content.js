@@ -86,7 +86,7 @@ export const content = {
     contact: {
       label: 'Contact',
       title: 'Let’s connect.',
-      intro: 'Use the contact form to send a message.',
+      intro: '',
     },
   },
   about: {
@@ -302,15 +302,13 @@ export const content = {
       invalidEmail: 'Enter a valid email address.',
       tooLong: 'This entry is too long.',
       unavailable: 'Contact information is not currently available.',
-      detailsUnavailable: 'Direct contact details have not been published yet. You can still send a message using the form.',
-      hint: 'Please include your name, email, and a short message so I can respond.',
+      detailsUnavailable: '',
+      hint: '',
       emailDraft: 'Your email app should open with a draft. Nothing is sent until you press send.',
       openEmailDraft: 'Open email draft',
       sent: 'Your message was received. Thank you.',
       genericError: 'Your message could not be sent. Please try again later.',
     },
-    contactInvitation: 'Have a question or an opportunity? Send me a message.',
-    brandDetail: 'Professional Portfolio',
     footerNote: 'Professional Resume Portfolio',
     footerRights: 'Resume portfolio',
     notFound: {

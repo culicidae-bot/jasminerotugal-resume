@@ -76,7 +76,7 @@ export const presets = {
 };
 
 export const designSettings = {
-  activePreset: 'midnight',
+  activePreset: 'graphite-violet',
   lightPreset: 'ivory-light',
   colorOverrides: {
     primary: null,

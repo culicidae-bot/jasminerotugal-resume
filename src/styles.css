@@ -361,7 +361,7 @@ main {
 
 .hero-inner {
   display: flex;
-  min-height: min(88svh, 60rem);
+  min-height: 100svh;
   align-items: center;
   padding-top: clamp(2.5rem, 6vh, 5rem);
   padding-bottom: clamp(2.5rem, 6vh, 5rem);
@@ -400,13 +400,12 @@ main {
 
 .hero h1 {
   width: 100%;
-  max-width: 11ch;
-  overflow: visible;
-  font-size: clamp(2.6rem, 6.7vw, 5.5rem);
+  max-width: none;
+  overflow: hidden;
+  font-size: clamp(1.9rem, 10.5vw, 5.4rem);
   letter-spacing: -0.045em;
   line-height: 0.98;
-  white-space: normal;
-  text-wrap: balance;
+  white-space: nowrap;
 }
 
 .hero[data-hero="centered"] h1 {
@@ -3008,41 +3007,13 @@ body::before {
 }
 
 
-/* PDF-reference viewer refinements: restrained resume layout, not dashboard UI. */
+/* Contact keeps the numbered resume-section heading inside the inverse band. */
 .primary-nav .theme-toggle {
   font-family: var(--font-mono);
   font-size: 0.7rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
-}
-
-.about-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: clamp(2rem, 5vw, 4rem);
-  align-items: start;
-}
-
-.about-grid.has-media {
-  grid-template-columns: minmax(0, 1.35fr) minmax(14rem, 0.65fr);
-}
-
-.about-copy {
-  max-width: 72ch;
-}
-
-.hairline-list {
-  list-style: none;
-  max-width: 44rem;
-  margin-top: 0.5rem;
-  border-top: var(--border-width) solid var(--color-border);
-}
-
-.hairline-list li {
-  padding: 0.75rem 0;
-  border-bottom: var(--border-width) solid var(--color-border);
-  color: var(--color-muted);
 }
 
 .contact-section {
@@ -3071,31 +3042,4 @@ body::before {
 
 .contact-section .section-heading {
   margin-bottom: clamp(2rem, 4vw, 3.25rem);
-}
-
-.form-hint {
-  margin-top: -0.65rem;
-  margin-bottom: 1.1rem;
-  color: var(--color-muted);
-  font-size: 0.88rem;
-  line-height: 1.55;
-}
-
-.contact-section .form-hint {
-  color: var(--color-inverse-soft);
-}
-
-@media (max-width: 760px) {
-  .hero h1 {
-    max-width: 11ch;
-    font-size: clamp(2.55rem, 11vw, 4rem);
-  }
-
-  .about-grid.has-media {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .contact-section {
-    min-height: auto;
-  }
 }

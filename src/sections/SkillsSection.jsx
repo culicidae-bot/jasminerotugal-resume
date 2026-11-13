@@ -1,5 +1,4 @@
 import Section from '../components/Section.jsx';
-import { getSkillProficiency } from '../lib/public-sections.js';
 import { priorityOf } from '../lib/prioritize.js';
 import { useSite } from '../lib/site-context.js';
 
@@ -21,8 +20,7 @@ function skillCategoryRank(category) {
 function proficiencyText(skill) {
   const label = typeof skill?.label === 'string' ? skill.label.trim() : '';
   if (label) return label;
-  const value = getSkillProficiency(skill?.proficiency);
-  return value === null ? '' : `${value}/100`;
+  return '';
 }
 
 export default function SkillsSection({ index }) {

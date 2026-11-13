@@ -82,7 +82,6 @@ function ContactForm({ contactEmail, hasFunction }) {
   return (
     <form className="contact-form" onSubmit={handleSubmit} noValidate>
       <h3>{labels.formTitle}</h3>
-      <p className="form-hint">{labels.hint}</p>
       <div className="field">
         <label htmlFor={`${baseId}-name`}>{labels.name}</label>
         <input
@@ -182,7 +181,7 @@ function ContactForm({ contactEmail, hasFunction }) {
 
 function LargeEmailLink({ email }) {
   const ref = useRef(null);
-  useFittedText(ref, { minSize: 12 });
+  useFittedText(ref, { minSize: 13 });
   return (
     <a className="contact-email" ref={ref} href={`mailto:${email}`}>
       {email}
@@ -199,7 +198,6 @@ export default function ContactSection({ index }) {
   const linkedin = isSafeHttpUrl(content.contact.linkedin) ? content.contact.linkedin : null;
   const hasFunction = Boolean(import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_CONTACT_FUNCTION_URL);
   const formAvailable = Boolean(contactEmail || hasFunction);
-  const hasContactDetails = Boolean(contactEmail || github || linkedin);
 
   return (
     <Section
@@ -213,9 +211,6 @@ export default function ContactSection({ index }) {
       <div className="contact-grid">
         <div className="contact-details">
           {contactEmail ? <LargeEmailLink email={contactEmail} /> : null}
-          {!hasContactDetails && formAvailable ? (
-            <p className="contact-empty">{labels.detailsUnavailable}</p>
-          ) : null}
           {github || linkedin ? (
             <nav className="contact-socials" aria-label={content.ui.professionalLinks}>
               {github ? (

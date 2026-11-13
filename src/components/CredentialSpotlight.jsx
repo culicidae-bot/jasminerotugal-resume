@@ -106,7 +106,7 @@ export default function CredentialSpotlight({ records }) {
         if (!event.currentTarget.contains(event.relatedTarget)) setHovered(false);
       }}
     >
-      <ul className="credential-list rotating" aria-label={content.ui.featuredCredentials}>
+      <ul className="credential-list rotating" aria-label={content.ui.featuredCredentials} aria-live="off">
         {records.map((record, recordIndex) => (
           <CredentialItem
             key={record.id}
