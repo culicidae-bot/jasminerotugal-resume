@@ -1,10 +1,9 @@
-import { useState } from 'react';
 import ImageSlot, { isUsableImage } from '../components/ImageSlot.jsx';
 import { ExternalIcon } from '../components/Icons.jsx';
 import Section from '../components/Section.jsx';
 import { useSite } from '../lib/site-context.js';
 import { isPublicProject } from '../lib/public-sections.js';
-import { selectFeatured, FEATURED_LIMITS, sortByPriority } from '../lib/prioritize.js';
+import { sortByPriority } from '../lib/prioritize.js';
 import { isSafeHttpUrl } from '../lib/urls.js';
 
 function projectScreenshots(project) {
@@ -14,11 +13,8 @@ function projectScreenshots(project) {
 export default function ProjectsSection({ index }) {
   const { content, design } = useSite();
   const section = content.sections.projects;
-  const [expanded, setExpanded] = useState(false);
   const allProjects = content.projects.filter(isPublicProject);
-  const projects = expanded
-    ? sortByPriority(allProjects)
-    : selectFeatured(allProjects, FEATURED_LIMITS.projects);
+  const projects = sortByPriority(allProjects);
 
   return (
     <Section
@@ -109,20 +105,6 @@ export default function ProjectsSection({ index }) {
             );
           })}
         </ol>
-      ) : null}
-      {allProjects.length > FEATURED_LIMITS.projects ? (
-        <div className="section-footer">
-          <button
-            type="button"
-            className="button-quiet text-link view-all-button"
-            aria-expanded={expanded}
-            onClick={() => setExpanded((current) => !current)}
-          >
-            {expanded
-              ? content.ui.showFewer
-              : `${content.ui.viewAllProjects} (${allProjects.length})`}
-          </button>
-        </div>
       ) : null}
     </Section>
   );
