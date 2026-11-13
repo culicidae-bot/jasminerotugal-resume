@@ -179,24 +179,14 @@ function normalizedDesign(raw) {
   return normalizeDatabaseDesign(raw);
 }
 
-function storedTheme() {
-  try {
-    const saved = window.localStorage.getItem('portfolio-theme');
-    return saved === 'light' || saved === 'dark' ? saved : null;
-  } catch {
-    return null;
-  }
-}
-
 export function applyDesignTokens(raw = fallbackDesignSettings, requestedTheme) {
   const root = typeof document !== 'undefined' ? document.documentElement : null;
   if (!root) return normalizedDesign(raw);
 
   const settings = normalizedDesign(raw);
-  const savedTheme = storedTheme();
   const theme = requestedTheme === 'light' || requestedTheme === 'dark'
     ? requestedTheme
-    : savedTheme || (settings.activePreset === 'ivory-light' ? 'light' : 'dark');
+    : (settings.activePreset === 'ivory-light' ? 'light' : 'dark');
   const activeDarkPreset = presets[settings.activePreset]?.mode === 'dark'
     ? settings.activePreset
     : fallbackDesignSettings.activePreset;
