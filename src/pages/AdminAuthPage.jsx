@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { getSupabaseClient } from '../lib/supabase.js';
+import { getSupabaseClient, getSupabaseConfigIssue } from '../lib/supabase.js';
 import AdminDashboard from './AdminDashboard.jsx';
 
 const GENERIC_LOGIN_ERROR = 'Email or password is incorrect';
@@ -15,6 +15,7 @@ function InlineError({ message, id }) {
 
 export default function AdminAuthPage() {
   const supabase = getSupabaseClient();
+  const configIssue = getSupabaseConfigIssue();
   const [mode, setMode] = useState('checking');
   const [fields, setFields] = useState({ email: '', password: '', code: '' });
   const [errors, setErrors] = useState({});
@@ -250,13 +251,19 @@ export default function AdminAuthPage() {
           <p className="admin-kicker">Setup required</p>
           <h1 id="admin-title">Admin is not connected</h1>
           <p role="alert">
-            This build is missing its Supabase project URL or public anon key. The sign-in form
-            cannot work until the project owner configures both values for this environment and
-            rebuilds or redeploys the site.
+            {configIssue ??
+              'This build is missing its Supabase project URL or public anon key.'}
           </p>
           <p>
-            Configure <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code>.
-            Never use a service-role key in the browser.
+            This is a build-time configuration problem: the <code>VITE_SUPABASE_*</code> values must
+            be present when the site is built, not only at runtime. Configure{' '}
+            <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> for the exact
+            environment being viewed, then rebuild or redeploy. Check the deployment build logs and
+            confirm the deployment you are viewing is the latest commit.
+          </p>
+          <p>
+            Never put a service-role key in the browser. If the values are set, confirm they are set
+            for this environment (Production vs Preview) and redeploy.
           </p>
         </section>
       </main>

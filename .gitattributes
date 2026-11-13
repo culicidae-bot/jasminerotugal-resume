@@ -22,3 +22,4 @@
 *.7z    binary
 *.mp4   binary
 *.webm  binary
+*.wasm  binary

@@ -502,3 +502,76 @@ test('legacy migration preserves an existing private object instead of overwriti
   );
   assert.equal(client.objects.has('public-media/portfolio/legacy.webp'), false);
 });
+
+const testResumeDraft = {
+  ...content,
+  projects: content.projects.map((project) => project),
+  hero: { ...content.hero, name: 'Jasmine L. Rotugal' },
+  resumePath: '/resume/RotugalJasmine.pdf',
+};
+
+test('publishing regenerates the public resume PDF and points the public site at it', async () => {
+  const client = createStorageClient([]);
+  const result = await publishPortfolioContentWithClient(client, testResumeDraft);
+
+  assert.match(result.content.resumePath, /\/storage\/v1\/object\/public\/public-media\/portfolio\/resume\.pdf$/);
+
+  const uploaded = client.uploads.find((entry) => entry.path === 'portfolio/resume.pdf');
+  assert.ok(uploaded, 'expected portfolio/resume.pdf to be uploaded');
+  assert.equal(uploaded.bucket, 'public-media');
+  assert.equal(uploaded.options.upsert, true);
+  assert.equal(uploaded.options.contentType, 'application/pdf');
+
+  const pdfBytes = await client.objects.get('public-media/portfolio/resume.pdf');
+  assert.deepEqual([...pdfBytes.slice(0, 5)], [...Buffer.from('%PDF-')]);
+
+  const publicRow = client.settings.find((row) => row.key === 'portfolio_content');
+  const draftRow = client.settings.find((row) => row.key === 'portfolio_content_draft');
+  assert.equal(JSON.parse(publicRow.value).resumePath, result.content.resumePath);
+  assert.equal(JSON.parse(draftRow.value).resumePath, '/resume/RotugalJasmine.pdf');
+});
+
+test('a manual resume upload overrides generation and is copied to public-media instead', async () => {
+  const client = createStorageClient([]);
+  client.objects.set('originals/portfolio/my-resume.pdf', new Blob(['%PDF-manual']));
+
+  const draft = { ...testResumeDraft, resumePath: 'originals:portfolio/my-resume.pdf' };
+  const result = await publishPortfolioContentWithClient(client, draft);
+
+  assert.equal(result.content.resumePath,
+    'https://project.example/storage/v1/object/public/public-media/portfolio/my-resume.pdf');
+  assert.equal(
+    client.uploads.some((entry) => entry.path === 'portfolio/resume.pdf'),
+    false,
+    'automatic generation must be skipped when a manual override exists',
+  );
+});
+
+test('resume generation failure surfaces as a warning and does not block publish', async () => {
+  const client = createStorageClient([]);
+  const failing = new Proxy(client, {
+    get(target, property) {
+      if (property === 'storage') {
+        return {
+          from(bucket) {
+            if (bucket === 'public-media') {
+              return {
+                upload: async () => ({ error: new Error('storage unavailable') }),
+                getPublicUrl: (path) => ({
+                  data: { publicUrl: `https://project.example/storage/v1/object/public/public-media/${path}` },
+                }),
+              };
+            }
+            return target.storage.from(bucket);
+          },
+        };
+      }
+      return target[property];
+    },
+  });
+
+  const result = await publishPortfolioContentWithClient(failing, testResumeDraft);
+  assert.equal(result.content.resumePath, '/resume/RotugalJasmine.pdf');
+  assert.ok(result.warnings.some((warning) => warning.includes('resume')), 'expected a resume warning');
+  assert.ok(client.settings.some((row) => row.key === 'portfolio_content' && row.published === true));
+});

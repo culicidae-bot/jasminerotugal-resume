@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { designSettings as defaultDesign, presets } from '../data/design.js';
 import { useSite } from '../lib/site-context.js';
 import '../admin.css';
@@ -21,7 +21,18 @@ import {
   unpublishPortfolioContent,
   uploadPortfolioAsset,
 } from '../lib/portfolio-content.js';
-import { getSupabaseClient } from '../lib/supabase.js';
+import { getSupabaseClient, getSupabaseConfigIssue } from '../lib/supabase.js';
+import {
+  FEATURED_LIMITS,
+  RESUME_SOFT_LIMITS,
+  selectFeatured,
+  selectResume,
+  sortByPriority,
+  isResumeSelected,
+  splitRecords,
+} from '../lib/prioritize.js';
+import { getResumePageCount, planResumeSections } from '../lib/resume.js';
+import BatchImportWorkspace from '../components/BatchImportWorkspace.jsx';
 
 const ACHIEVEMENT_TYPES = ['Achievement', 'Award'];
 const SKILL_CATEGORY_OPTIONS = [
@@ -35,7 +46,16 @@ const SKILL_CATEGORY_OPTIONS = [
 const navGroups = [
   {
     label: 'Overview',
-    items: [['overview', 'Overview']],
+    items: [
+      ['overview', 'Overview'],
+      ['preview', 'Preview'],
+    ],
+  },
+  {
+    label: 'Import',
+    items: [
+      ['import', 'Batch import'],
+    ],
   },
   {
     label: 'Content',
@@ -76,8 +96,11 @@ const listFields = {
   skills: [
     { key: 'category', label: 'Category', options: SKILL_CATEGORY_OPTIONS },
     { key: 'name', label: 'Skill name' },
-    { key: 'proficiency', label: 'Proficiency (0–100)', type: 'number' },
+    { key: 'proficiency', label: 'Proficiency (0–100)', type: 'number', min: 0, max: 100 },
     { key: 'label', label: 'Proficiency label' },
+    { key: 'featured', label: 'Feature on Website', type: 'boolean' },
+    { key: 'resume', label: 'Include in Resume', type: 'boolean' },
+    { key: 'priority', label: 'Display Priority (lower shows first)', type: 'number', min: 0, max: 10000, allowEmpty: true },
   ],
   certificates: [
     { key: 'title', label: 'Certificate title' },
@@ -85,17 +108,25 @@ const listFields = {
     { key: 'issuer', label: 'Issuing organization' },
     { key: 'dateEarned', label: 'Date earned', type: 'date' },
     { key: 'verifyUrl', label: 'Verification URL' },
+    { key: 'featured', label: 'Feature on Website', type: 'boolean' },
+    { key: 'resume', label: 'Include in Resume', type: 'boolean' },
+    { key: 'priority', label: 'Display Priority (lower shows first)', type: 'number', min: 0, max: 10000, allowEmpty: true },
   ],
   achievements: [
     { key: 'title', label: 'Achievement title' },
     { key: 'issuer', label: 'Issuing organization' },
     { key: 'dateEarned', label: 'Date earned', type: 'date' },
     { key: 'verifyUrl', label: 'Verification URL' },
+    { key: 'featured', label: 'Feature on Website', type: 'boolean' },
+    { key: 'resume', label: 'Include in Resume', type: 'boolean' },
+    { key: 'priority', label: 'Display Priority (lower shows first)', type: 'number', min: 0, max: 10000, allowEmpty: true },
   ],
   eligibility: [
     { key: 'title', label: 'Eligibility or certification title' },
     { key: 'issuer', label: 'Issuing organization' },
     { key: 'dateConferred', label: 'Date conferred', type: 'date' },
+    { key: 'resume', label: 'Include in Resume', type: 'boolean' },
+    { key: 'priority', label: 'Display Priority (lower shows first)', type: 'number', min: 0, max: 10000, allowEmpty: true },
   ],
   experience: [
     { key: 'role', label: 'Position / role' },
@@ -104,6 +135,9 @@ const listFields = {
     { key: 'summary', label: 'Summary' },
     { key: 'responsibilities', label: 'Responsibilities (one per line)', type: 'lines' },
     { key: 'accomplishments', label: 'Accomplishments (one per line)', type: 'lines' },
+    { key: 'featured', label: 'Feature on Website', type: 'boolean' },
+    { key: 'resume', label: 'Include in Resume', type: 'boolean' },
+    { key: 'priority', label: 'Display Priority (lower shows first)', type: 'number', min: 0, max: 10000, allowEmpty: true },
   ],
   projects: [
     { key: 'title', label: 'Project title' },
@@ -115,7 +149,9 @@ const listFields = {
     { key: 'contributions', label: 'Your contributions (one per line)', type: 'lines' },
     { key: 'projectUrl', label: 'Live project URL' },
     { key: 'sourceUrl', label: 'Source code URL' },
-    { key: 'featured', label: 'Feature this project on the public site', type: 'boolean' },
+    { key: 'featured', label: 'Feature on Website', type: 'boolean' },
+    { key: 'resume', label: 'Include in Resume', type: 'boolean' },
+    { key: 'priority', label: 'Display Priority (lower shows first)', type: 'number', min: 0, max: 10000, allowEmpty: true },
   ],
 };
 
@@ -255,6 +291,10 @@ function RecordListEditor({
     .map((record, index) => ({ record, index }))
     .filter((entry) => (recordFilter ? recordFilter(entry.record) : true));
   const [editing, setEditing] = useState(null);
+  const [attachmentState, setAttachmentState] = useState('idle');
+  const [extraction, setExtraction] = useState(null);
+  const lastCertificateFileRef = useRef(null);
+  const autoFilledRef = useRef({});
 
   function addRecord() {
     const record = { id: crypto.randomUUID() };
@@ -262,11 +302,17 @@ function RecordListEditor({
     if (fixedType) record.type = fixedType;
     else if (allowCertificateFile) record.type = '';
     if (allowScreenshots) record.screenshots = [];
+    setAttachmentState('idle');
+    setExtraction(null);
+    autoFilledRef.current = {};
     setEditing({ key: `new:${record.id}`, index: allRecords.length, original: null, value: record });
     onEditingChange(path, true);
   }
 
   function startEditing(record, index) {
+    setAttachmentState('idle');
+    setExtraction(null);
+    autoFilledRef.current = {};
     setEditing(beginRecordEdit(record, record.id ? `id:${record.id}` : `index:${index}`, index));
     onEditingChange(path, true);
   }
@@ -323,6 +369,61 @@ function RecordListEditor({
     updateScreenshots(editKey, newImages);
   }
 
+  async function runExtraction(file) {
+    if (!file) return;
+    lastCertificateFileRef.current = file;
+    const { extractCertificateDocument } = await import('../lib/certificate-ocr.js');
+    setExtraction({ status: 'working', progress: 0, message: 'Preparing…', summary: null });
+    try {
+      const summary = await extractCertificateDocument(file, {
+        onProgress: (message) => {
+          setExtraction((current) => (
+            current?.status === 'working'
+              ? { ...current, progress: message.progress ?? current.progress, message: message.status ?? current.message }
+              : current
+          ));
+        },
+      });
+      setExtraction({ status: 'done', progress: 1, message: '', summary });
+      setEditing((current) => {
+        if (!current) return current;
+        const nextValue = { ...current.value };
+        const nextAutoFilled = { ...autoFilledRef.current };
+        const fill = (fieldKey) => {
+          const extracted = summary.fields[fieldKey]?.value;
+          if (!extracted) return;
+          const untouched = !nextValue[fieldKey] || autoFilledRef.current[fieldKey];
+          if (untouched) {
+            nextValue[fieldKey] = extracted;
+            nextAutoFilled[fieldKey] = true;
+          }
+        };
+        fill('title');
+        fill('issuer');
+        fill('dateEarned');
+        fill('verifyUrl');
+        const suggestedType = summary.fields.type?.value;
+        if (suggestedType && (!nextValue.type || autoFilledRef.current.type)) {
+          nextValue.type = suggestedType;
+          nextAutoFilled.type = true;
+        }
+        const recipient = summary.fields.recipient?.value;
+        const credentialId = summary.fields.credentialId?.value;
+        if (recipient || credentialId) {
+          nextValue.extracted = {
+            recipient: recipient || undefined,
+            credentialId: credentialId || undefined,
+            method: summary.method,
+          };
+        }
+        autoFilledRef.current = nextAutoFilled;
+        return { ...current, value: nextValue };
+      });
+    } catch (error) {
+      setExtraction({ status: 'error', progress: 0, message: error?.message || 'Extraction failed.', summary: null });
+    }
+  }
+
   async function addCertificateFile(editKey, title, file) {
     const src = await uploadPortfolioAsset(file, { kind: 'certificate' });
     setEditing((current) => current?.key === editKey ? {
@@ -338,6 +439,7 @@ function RecordListEditor({
         },
       },
     } : current);
+    void runExtraction(file);
   }
 
   useEffect(() => () => onEditingChange(path, false), [onEditingChange, path]);
@@ -382,7 +484,9 @@ function RecordListEditor({
                   const parsedValue = field.type === 'lines'
                     ? nextValue.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
                     : field.type === 'number'
-                      ? Math.min(100, Math.max(0, Number(nextValue) || 0))
+                      ? nextValue.trim() === '' && field.allowEmpty
+                        ? ''
+                        : Math.min(field.max ?? 100, Math.max(field.min ?? 0, Number(nextValue) || 0))
                       : nextValue;
                   updateField(field.key, parsedValue);
                 }}
@@ -422,26 +526,95 @@ function RecordListEditor({
           </div>
         ) : null}
         {allowCertificateFile ? (
-          <div className="admin-field">
-            <label htmlFor={`certificate-file-${key}`}>Certificate image or PDF</label>
+          <div className="admin-field admin-attachment">
+            <label htmlFor={`certificate-file-${key}`}>
+              {value.publicFile?.src ? 'Replace certificate attachment' : 'Certificate attachment'} (JPG, PNG, WebP, or PDF)
+            </label>
             <input
               id={`certificate-file-${key}`}
               type="file"
               accept="application/pdf,image/jpeg,image/png,image/webp"
+              disabled={attachmentState === 'uploading'}
               onChange={(event) => {
-                if (event.target.files?.[0]) {
-                  addCertificateFile(key, value.title, event.target.files[0])
-                    .catch((error) => onUploadError(error.message));
+                const file = event.target.files?.[0];
+                if (file) {
+                  setAttachmentState('uploading');
+                  addCertificateFile(key, value.title, file)
+                    .then(() => setAttachmentState('done'))
+                    .catch((error) => {
+                      setAttachmentState('idle');
+                      onUploadError(error.message);
+                    });
                 }
                 event.target.value = '';
               }}
             />
+            <small>Up to 2 MB for images, 10 MB for PDFs. Attachments are private drafts until you publish.</small>
+            {attachmentState === 'uploading' ? <p role="status">Uploading attachment…</p> : null}
+            {attachmentState === 'done' ? <p role="status">Attachment saved to the private draft.</p> : null}
             {value.publicFile?.src ? (
-              <p>
-                <DraftAssetLink src={value.publicFile.src}>Open uploaded document</DraftAssetLink>
-                {' · '}
-                <button className="text-button" type="button" onClick={() => updateField('publicFile', null)}>Remove file</button>
-              </p>
+              <div className="attachment-preview">
+                {value.publicFile?.mimeType?.startsWith('image/') ? (
+                  <DraftAssetImage className="attachment-thumb" src={value.publicFile.src} alt={value.publicFile.alt || ''} />
+                ) : (
+                  <DraftAssetLink src={value.publicFile.src}>Open uploaded document</DraftAssetLink>
+                )}
+                <div className="attachment-actions">
+                  <button className="text-button" type="button" onClick={() => updateField('publicFile', null)}>Remove attachment</button>
+                </div>
+              </div>
+            ) : null}
+
+            {extraction ? (
+              <div className="extraction-panel" role="region" aria-label="Extracted certificate information">
+                <div className="extraction-heading">
+                  <h4>Review extracted information</h4>
+                  {extraction.status === 'working' ? <span className="extraction-badge extraction-badge-ok">Reading…</span> : null}
+                  {extraction.status === 'done' ? <span className="extraction-badge extraction-badge-ok">Extracted — please review</span> : null}
+                  {extraction.status === 'error' ? <span className="extraction-badge extraction-badge-error">Extraction failed</span> : null}
+                </div>
+                {extraction.status === 'working' ? (
+                  <p className="extraction-progress" role="status">{extraction.message} · {Math.round((extraction.progress ?? 0) * 100)}%</p>
+                ) : null}
+                {extraction.status === 'error' ? (
+                  <p className="extraction-progress" role="alert">{extraction.message}</p>
+                ) : null}
+                {extraction.status === 'done' && extraction.summary ? (
+                  <>
+                    <ul className="extraction-list">
+                      {[
+                        ['Title', extraction.summary.fields.title],
+                        ['Issuer', extraction.summary.fields.issuer],
+                        ['Date earned', extraction.summary.fields.dateEarned],
+                        ['Recipient', extraction.summary.fields.recipient],
+                        ['Credential ID', extraction.summary.fields.credentialId],
+                        ['Verification URL', extraction.summary.fields.verifyUrl],
+                        ['Suggested type', extraction.summary.fields.type],
+                      ].map(([label, field]) => (
+                        <li className="extraction-row" key={label}>
+                          <span className="extraction-row-label">{label}</span>
+                          <span className="extraction-row-value">{field?.value || '—'}</span>
+                          <span className={`confidence-chip confidence-${field?.confidence ?? 'missing'}`}>
+                            {field?.confidence === 'high' && 'High'}
+                            {field?.confidence === 'medium' && 'Medium'}
+                            {field?.confidence === 'low' && 'Low — check'}
+                            {(field?.confidence === 'missing' || !field?.confidence) && 'Not found'}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                    {extraction.summary.notes?.length ? (
+                      <ul className="extraction-notes">
+                        {extraction.summary.notes.map((note, index) => <li key={index}>{note}</li>)}
+                      </ul>
+                    ) : null}
+                    <div className="admin-form-actions">
+                      <button className="admin-button" type="button" onClick={() => lastCertificateFileRef.current && runExtraction(lastCertificateFileRef.current)}>Extract again</button>
+                      <button className="admin-button" type="button" onClick={() => setExtraction(null)}>Dismiss review</button>
+                    </div>
+                  </>
+                ) : null}
+              </div>
             ) : null}
           </div>
         ) : null}
@@ -519,6 +692,167 @@ function OverviewStat({ label, value, detail }) {
       <p className="admin-stat-label">{label}</p>
       {detail ? <p className="admin-stat-detail">{detail}</p> : null}
     </div>
+  );
+}
+
+function PreviewPanel({ draft, onGoToTab }) {
+  const [pageCount, setPageCount] = useState(null);
+  const [pageCountError, setPageCountError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    setPageCount(null);
+    setPageCountError('');
+    getResumePageCount(draft)
+      .then((count) => {
+        if (active) setPageCount(count);
+      })
+      .catch((error) => {
+        if (active) setPageCountError(error.message);
+      });
+    return () => {
+      active = false;
+    };
+  }, [draft]);
+
+  const summary = useMemo(() => {
+    const split = splitRecords(draft.certificates || []);
+    const resumeIncludes = (items, softLimit) => selectResume(items || [], softLimit);
+    return {
+      skills: { included: resumeIncludes(draft.skills, RESUME_SOFT_LIMITS.skills).length, total: draft.skills?.length || 0 },
+      experience: {
+        included: ['work', 'internship', 'volunteer', 'academic']
+          .reduce((total, group) => total + resumeIncludes(draft.experience?.[group], RESUME_SOFT_LIMITS.experience).length, 0),
+        total: ['work', 'internship', 'volunteer', 'academic']
+          .reduce((total, group) => total + (draft.experience?.[group]?.length || 0), 0),
+      },
+      projects: { included: resumeIncludes(draft.projects, RESUME_SOFT_LIMITS.projects).length, total: draft.projects?.length || 0 },
+      certificates: { included: resumeIncludes(split.certificates, RESUME_SOFT_LIMITS.certificates).length, total: split.certificates.length },
+      achievements: { included: resumeIncludes(split.achievements, RESUME_SOFT_LIMITS.achievements).length, total: split.achievements.length },
+      eligibility: { included: resumeIncludes(draft.eligibility, RESUME_SOFT_LIMITS.eligibility).length, total: draft.eligibility?.length || 0 },
+      featured: {
+        skills: selectFeatured(draft.skills || [], FEATURED_LIMITS.skills),
+        projects: selectFeatured(draft.projects || [], FEATURED_LIMITS.projects),
+        certificates: selectFeatured(split.certificates, FEATURED_LIMITS.certificates),
+        achievements: selectFeatured(split.achievements, FEATURED_LIMITS.achievements),
+      },
+    };
+  }, [draft]);
+
+  const excludedFromResume = useMemo(() => {
+    const buckets = [
+      ['skills', draft.skills],
+      ['projects', draft.projects],
+      ['certificates', (draft.certificates || []).filter((record) => !ACHIEVEMENT_TYPES.includes(record?.type))],
+      ['achievements', (draft.certificates || []).filter((record) => ACHIEVEMENT_TYPES.includes(record?.type))],
+      ['eligibility', draft.eligibility],
+    ];
+    return buckets.flatMap(([bucket, items]) =>
+      (items || []).filter((item) => !isResumeSelected(item)).map((item) => ({
+        bucket,
+        name: item.name || item.title || item.role || 'Untitled',
+      })),
+    );
+  }, [draft]);
+
+  const nameOf = (item) => item.name || item.title || `${item.role} — ${item.organization}` || 'Untitled';
+
+  return (
+    <section className="editor-section">
+      <div className="editor-section-heading">
+        <div>
+          <h2>Preview</h2>
+          <p>What the public site and your generated resume will show. Built from your draft — the public site uses the last published version.</p>
+        </div>
+        <a className="admin-button admin-button-primary" href="/preview" target="_blank" rel="noopener noreferrer">Open public preview</a>
+      </div>
+
+      <div className="admin-preview-grid">
+        <div className="admin-overview-panel">
+          <h3>Resume selection (draft)</h3>
+          <p className="admin-overview-note">
+            Records marked “Include in Resume” — plus legacy records until you say otherwise —
+            regenerate the public PDF on your next publish.
+          </p>
+          <dl className="admin-record-summary">
+            <div><dt>Skills</dt><dd>{summary.skills.included} of {summary.skills.total}</dd></div>
+            <div><dt>Experience entries</dt><dd>{summary.experience.included} of {summary.experience.total}</dd></div>
+            <div><dt>Projects</dt><dd>{summary.projects.included} of {summary.projects.total}</dd></div>
+            <div><dt>Certificates</dt><dd>{summary.certificates.included} of {summary.certificates.total}</dd></div>
+            <div><dt>Achievements</dt><dd>{summary.achievements.included} of {summary.achievements.total}</dd></div>
+            <div><dt>Eligibility</dt><dd>{summary.eligibility.included} of {summary.eligibility.total}</dd></div>
+          </dl>
+          <p className="admin-resume-pages" role="status">
+            {pageCountError
+              ? `Resume length estimate unavailable: ${pageCountError}`
+              : pageCount === null
+                ? 'Estimating resume length…'
+                : `Estimated resume length: ${pageCount} page${pageCount === 1 ? '' : 's'}`}
+          </p>
+          {excludedFromResume.length ? (
+            <>
+              <h4 className="admin-checklist-title">Excluded from the resume</h4>
+              <ul className="admin-checklist">
+                {excludedFromResume.map((item, index) => (
+                  <li key={index} className="is-pending">
+                    <span className="admin-check-mark" aria-hidden="true">–</span>
+                    <span>{item.name} <span className="admin-muted">({item.bucket})</span></span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+        </div>
+
+        <div className="admin-overview-panel">
+          <h3>Featured on the homepage (draft)</h3>
+          <p className="admin-overview-note">
+            Records marked “Feature on Website” fill these slots; the rest stay available through
+            the View all links.
+          </p>
+          {[
+            ['skills', summary.featured.skills, 'Skills', 'skills'],
+            ['certificates', summary.featured.certificates, 'Certificates', 'certificates'],
+            ['achievements', summary.featured.achievements, 'Achievements', 'achievements'],
+            ['projects', summary.featured.projects, 'Projects', 'projects'],
+          ].map(([bucket, items, label, tab]) => (
+            <div key={bucket} className="admin-preview-bucket">
+              <h4 className="admin-checklist-title">
+                {label} — {items.length} shown
+                <button type="button" className="text-button" onClick={() => onGoToTab(tab)}>edit</button>
+              </h4>
+              {items.length ? (
+                <ul className="admin-preview-list">
+                  {items.map((item, index) => <li key={index}>{nameOf(item)}</li>)}
+                </ul>
+              ) : (
+                <p className="admin-muted">No {label.toLowerCase()} published yet.</p>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="admin-overview-panel admin-preview-resume">
+        <h3>Resume outline (draft)</h3>
+        <p className="admin-overview-note">Line-by-line outline of the PDF that will be generated on publish.</p>
+        <ol className="admin-resume-outline">
+          {planResumeSections(draft).map((section, index) => (
+            <li key={index}>
+              <span className="admin-resume-outline-title">{section.title || section.id}</span>
+              <span className="admin-muted">
+                {section.id === 'header' || section.id === 'more' || section.id === 'summary'
+                  ? '1 block'
+                  : `${section.entries?.length ?? section.groups?.length ?? 0} entries`}
+              </span>
+            </li>
+          ))}
+        </ol>
+        <p className="admin-overview-note">
+          The public resume always reflects the last <em>published</em> content. Publish when the selection looks right.
+        </p>
+      </div>
+    </section>
   );
 }
 
@@ -621,8 +955,13 @@ export default function AdminDashboard({ onLogout }) {
         }
       } catch (error) {
         if (!active) return;
+        const issue = getSupabaseConfigIssue();
         setLoadState('error');
-        setStatus(`Could not load saved content: ${error.message}`);
+        setStatus(
+          issue
+            ? `Could not load saved content: Supabase is not configured — ${issue}.`
+            : `Could not load saved content: ${error.message}`,
+        );
       }
     }
 
@@ -987,6 +1326,38 @@ export default function AdminDashboard({ onLogout }) {
         </section>
       ) : null}
 
+      {activeTab === 'preview' ? (
+        <PreviewPanel draft={draft} onGoToTab={setActiveTab} />
+      ) : null}
+
+      {activeTab === 'import' ? (
+        <BatchImportWorkspace
+          draft={draft}
+          existingRecords={draft.certificates}
+          onClose={() => setActiveTab('overview')}
+          onImport={(approved) => {
+            const next = { ...draft };
+            const existingIds = new Set((next.certificates || []).map((r) => r.id));
+            const certs = [...(next.certificates || [])];
+            let skipped = 0;
+            for (const { record, destination } of approved) {
+              if (existingIds.has(record.id)) { skipped += 1; continue; }
+              if (destination === 'achievement') {
+                certs.push({ ...record, type: 'Achievement', destination: 'achievement' });
+              } else {
+                const type = record.type && record.type !== 'Other' ? record.type : 'IT Certification';
+                certs.push({ ...record, type, destination: 'certificate' });
+              }
+            }
+            next.certificates = certs;
+            setDraft(next);
+            setEditRevision((current) => current + 1);
+            setStatus(`Imported ${approved.length - skipped} record${approved.length - skipped === 1 ? '' : 's'} into the draft${skipped ? ` (${skipped} duplicate skipped)` : ''}. Save and publish when you are ready.`);
+            setActiveTab('certificates');
+          }}
+        />
+      ) : null}
+
       {activeTab === 'profile' ? (
         <section className="editor-section">
           <h2>Profile</h2>
@@ -1212,7 +1583,7 @@ export default function AdminDashboard({ onLogout }) {
             </label>
             {draft.hero.portrait?.src ? <DraftAssetImage className="admin-photo-preview" src={draft.hero.portrait.src} alt={draft.hero.portrait.alt || ''} /> : <p className="admin-empty">No photo uploaded yet.</p>}
             <label className="admin-upload">
-              <span>Upload resume PDF</span>
+              <span>Upload resume PDF (optional override)</span>
               <input
                 type="file"
                 accept="application/pdf"
@@ -1223,6 +1594,7 @@ export default function AdminDashboard({ onLogout }) {
               />
             </label>
             {draft.resumePath ? <DraftAssetLink src={draft.resumePath}>Open current resume</DraftAssetLink> : null}
+            <p className="admin-settings-note">As of this build, the public resume PDF is regenerated automatically from your published content on every publish. Uploading a PDF here overrides that behavior until you clear the upload.</p>
           </div>
         </section>
       ) : null}

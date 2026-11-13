@@ -719,3 +719,408 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ---------- Certificate attachment panel ---------- */
+.admin-attachment small {
+  color: var(--color-muted);
+}
+
+.attachment-preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem 1rem;
+  margin-top: 0.5rem;
+}
+
+.attachment-thumb {
+  max-width: min(14rem, 100%);
+  max-height: 10rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.45rem;
+  background: var(--color-bg);
+  object-fit: contain;
+}
+
+.attachment-actions {
+  display: grid;
+  gap: 0.35rem;
+  align-content: start;
+}
+
+.admin-settings-note {
+  grid-column: 1 / -1;
+  max-width: 60ch;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+/* ---------- Preview tab ---------- */
+.admin-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.admin-preview-bucket {
+  border-top: 1px solid var(--color-border);
+  padding-top: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.admin-preview-bucket:first-of-type {
+  border-top: 0;
+  margin-top: 0;
+}
+
+.admin-checklist-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+}
+
+.admin-preview-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.admin-muted {
+  color: var(--color-muted);
+}
+
+.admin-resume-pages {
+  margin: 0.75rem 0 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+  border-radius: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.admin-resume-outline {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding-left: 1.4rem;
+}
+
+.admin-resume-outline li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px dashed color-mix(in srgb, var(--color-border) 70%, transparent);
+}
+
+.admin-resume-outline li:last-child {
+  border-bottom: 0;
+}
+
+.admin-resume-outline-title {
+  font-weight: 650;
+}
+
+.admin-preview-resume {
+  margin-bottom: 0;
+}
+
+/* ---------- OCR extraction review panel ---------- */
+.extraction-panel {
+  margin-top: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+  border-radius: 0.6rem;
+  background: color-mix(in srgb, var(--color-primary) 7%, var(--color-surface));
+  padding: 0.85rem 1rem;
+}
+
+.extraction-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.extraction-heading h4 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.extraction-badge {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid;
+}
+
+.extraction-badge-ok {
+  color: var(--color-success);
+  border-color: color-mix(in srgb, var(--color-success) 60%, transparent);
+}
+
+.extraction-badge-error {
+  color: var(--color-error);
+  border-color: color-mix(in srgb, var(--color-error) 60%, transparent);
+}
+
+.extraction-list {
+  display: grid;
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0.6rem 0;
+  padding: 0;
+}
+
+.extraction-row {
+  display: grid;
+  grid-template-columns: minmax(7rem, 0.35fr) minmax(0, 1fr) auto;
+  gap: 0.6rem;
+  align-items: baseline;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 50%, transparent);
+}
+
+.extraction-row:last-child {
+  border-bottom: 0;
+}
+
+.extraction-row-label {
+  color: var(--color-muted);
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.extraction-row-value {
+  overflow-wrap: anywhere;
+}
+
+.confidence-chip {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  padding: 0.12rem 0.45rem;
+  border-radius: 0.3rem;
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.confidence-high {
+  color: var(--color-success);
+  border-color: color-mix(in srgb, var(--color-success) 60%, transparent);
+}
+
+.confidence-medium {
+  color: var(--color-link);
+  border-color: color-mix(in srgb, var(--color-link) 55%, transparent);
+}
+
+.confidence-low {
+  color: var(--color-warning);
+  border-color: color-mix(in srgb, var(--color-warning) 60%, transparent);
+}
+
+.confidence-missing {
+  color: var(--color-muted);
+  border-color: var(--color-border);
+}
+
+.extraction-notes {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.82rem;
+  color: var(--color-warning);
+}
+
+.extraction-progress {
+  margin: 0.5rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+/* ---------- Batch import workspace ---------- */
+.batch-import {
+  display: grid;
+  gap: 1rem;
+}
+
+.batch-drop {
+  border: 1.5px dashed color-mix(in srgb, var(--color-primary) 45%, var(--color-border));
+  border-radius: 0.7rem;
+  background: color-mix(in srgb, var(--color-primary) 6%, var(--color-surface));
+  padding: 1.75rem 1.25rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.batch-drop:hover,
+.batch-drop.is-drag {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+}
+
+.batch-drop strong {
+  color: var(--color-link);
+}
+
+.batch-note {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid var(--color-warning);
+  color: var(--color-text);
+}
+
+.batch-file-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.batch-file {
+  border: 1px solid var(--color-border);
+  border-radius: 0.6rem;
+  background: var(--color-surface);
+  padding: 0.75rem 0.9rem;
+  min-width: 0;
+}
+
+.batch-file legend {
+  padding: 0 0.3rem;
+  font-weight: 700;
+}
+
+.batch-file-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.batch-status {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+}
+
+.batch-status-complete,
+.batch-status-approved {
+  color: var(--color-success);
+  border-color: color-mix(in srgb, var(--color-success) 60%, transparent);
+}
+
+.batch-status-processing {
+  color: var(--color-link);
+}
+
+.batch-status-failed,
+.batch-status-rejected {
+  color: var(--color-error);
+}
+
+.batch-segment {
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 55%, transparent);
+  padding-top: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.batch-segment:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+.batch-segment-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.batch-range {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-link);
+  letter-spacing: 0.05em;
+}
+
+.batch-confidence {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid var(--color-border);
+  border-radius: 0.3rem;
+  padding: 0.12rem 0.45rem;
+}
+
+.batch-confidence-high {
+  color: var(--color-success);
+  border-color: color-mix(in srgb, var(--color-success) 60%, transparent);
+}
+
+.batch-confidence-medium {
+  color: var(--color-link);
+}
+
+.batch-confidence-low {
+  color: var(--color-warning);
+}
+
+.batch-destination {
+  display: flex;
+  gap: 0.5rem;
+  border: 0;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+
+.batch-destination legend {
+  float: left;
+  width: 100%;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--color-muted);
+  margin-bottom: 0.3rem;
+}
+
+.batch-destination-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.45rem;
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+}
+
+.batch-destination-option.is-active {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 16%, transparent);
+}
+
+.batch-summary {
+  border: 1px solid var(--color-border);
+  border-radius: 0.7rem;
+  background: var(--color-surface);
+  padding: 1rem 1.1rem;
+}
+
+.batch-summary h3 {
+  margin-top: 0;
+}

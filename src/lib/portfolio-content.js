@@ -1,4 +1,9 @@
-import { getSupabaseClient } from './supabase.js';
+import { getSupabaseClient, getSupabaseConfigIssue } from './supabase.js';
+import {
+  buildResumePdf,
+  RESUME_PUBLIC_URL_PATH,
+  STATIC_RESUME_PATH,
+} from './resume.js';
 
 const CONTENT_KEY = 'portfolio_content';
 const DRAFT_KEY = 'portfolio_content_draft';
@@ -101,6 +106,11 @@ export function mergePublishedPortfolioContent(base, savedContent) {
   return result;
 }
 
+function notConfiguredError() {
+  const issue = getSupabaseConfigIssue();
+  return new Error(issue ? `Supabase is not configured: ${issue}.` : 'Supabase is not configured.');
+}
+
 function getOriginalPath(reference) {
   if (typeof reference !== 'string' || !reference.startsWith(ORIGINALS_REFERENCE_PREFIX)) return null;
   const path = reference.slice(ORIGINALS_REFERENCE_PREFIX.length);
@@ -163,6 +173,7 @@ export function validatePublishedAssetReferencesWithClient(value, client) {
   const visit = (item, key = '') => {
     if (typeof item === 'string') {
       if (!item) return;
+      if (key === 'resumePath' && item === STATIC_RESUME_PATH) return; // bundled static file, safe to serve
       const approvedPublicPath = getPublicMediaPath(item, origin);
       if (
         (ASSET_REFERENCE_FIELDS.has(key) || isStorageReference(item)) &&
@@ -236,7 +247,7 @@ function validateStoragePath(path) {
 }
 
 export async function loadPendingPublicAssetCleanupWithClient(client) {
-  if (!client) throw new Error('Supabase is not configured.');
+  if (!client) throw notConfiguredError();
   const { data, error } = await client
     .from(CLEANUP_QUEUE)
     .select('storage_path')
@@ -341,7 +352,7 @@ function countSettingAssetReferences(rows, origin) {
 }
 
 export async function listPublicMediaInventoryWithClient(client) {
-  if (!client) throw new Error('Supabase is not configured.');
+  if (!client) throw notConfiguredError();
   const [objects, rows] = await Promise.all([
     listPublicMediaObjects(client),
     loadPortfolioSettings(client),
@@ -357,7 +368,7 @@ export async function listPublicMediaInventoryWithClient(client) {
 }
 
 export async function movePublicMediaToPrivateWithClient(client, path) {
-  if (!client) throw new Error('Supabase is not configured.');
+  if (!client) throw notConfiguredError();
   validateStoragePath(path);
 
   const origin = getPublicMediaOrigin(client);
@@ -455,7 +466,7 @@ async function mapAssetReferences(value, mapper) {
 export async function resolvePortfolioAssetUrl(value, client = getSupabaseClient()) {
   const path = getOriginalPath(value);
   if (!path) return value;
-  if (!client) throw new Error('Supabase is not configured.');
+  if (!client) throw notConfiguredError();
 
   const { data, error } = await client.storage
     .from(ORIGINALS_BUCKET)
@@ -491,7 +502,7 @@ export async function loadPublishedPortfolioContent() {
 }
 
 export async function loadPortfolioDraftWithClient(client) {
-  if (!client) throw new Error('Supabase is not configured.');
+  if (!client) throw notConfiguredError();
 
   const { data, error } = await client
     .from('site_settings')
@@ -530,7 +541,7 @@ export async function loadPortfolioDraft() {
 }
 
 export async function savePortfolioDraftWithClient(client, content) {
-  if (!client) throw new Error('Supabase is not configured.');
+  if (!client) throw notConfiguredError();
 
   const { error } = await client.from('site_settings').upsert(
     {
@@ -548,8 +559,40 @@ export async function savePortfolioDraft(content) {
   return savePortfolioDraftWithClient(getSupabaseClient(), content);
 }
 
+/**
+ * Regenerate the public resume PDF from the content that is about to be
+ * published. Runs on every publish unless the owner uploaded a manual
+ * resume override in the admin settings. Failures do not break publishing;
+ * they surface as a warning and the resume path stays on its fallback.
+ */
+async function attachGeneratedResume(client, draftContent, publishedContent) {
+  const draftPath = typeof draftContent?.resumePath === 'string' ? draftContent.resumePath.trim() : '';
+  const isStatic = draftPath === STATIC_RESUME_PATH;
+  const isGenerated = draftPath.endsWith('/public-media/portfolio/resume.pdf');
+  const manualOverride = Boolean(draftPath) && !isStatic && !isGenerated;
+  if (manualOverride) return { content: publishedContent, warnings: [] };
+
+  try {
+    const bytes = await buildResumePdf(publishedContent);
+    const { error } = await client.storage.from(PUBLIC_MEDIA_BUCKET).upload(
+      RESUME_PUBLIC_URL_PATH,
+      bytes,
+      { contentType: 'application/pdf', cacheControl: '60', upsert: true },
+    );
+    if (error) throw error;
+    const { data } = client.storage.from(PUBLIC_MEDIA_BUCKET).getPublicUrl(RESUME_PUBLIC_URL_PATH);
+    if (!data?.publicUrl) throw new Error('Could not create a public URL for the generated resume.');
+    return { content: { ...publishedContent, resumePath: data.publicUrl }, warnings: [] };
+  } catch (error) {
+    return {
+      content: publishedContent,
+      warnings: [`The resume PDF could not be generated automatically: ${error.message}`],
+    };
+  }
+}
+
 export async function publishPortfolioContentWithClient(client, content) {
-  if (!client) throw new Error('Supabase is not configured.');
+  if (!client) throw notConfiguredError();
 
   await processPendingPublicAssetCleanupWithClient(client);
   const previousPaths = collectPublicAssetPaths(await loadPortfolioSettings(client));
@@ -557,7 +600,7 @@ export async function publishPortfolioContentWithClient(client, content) {
   const assetCopies = new Map();
   let published = false;
   try {
-    const publishedContent = await mapAssetReferences(content, (value) => {
+    const publishedAssetContent = await mapAssetReferences(content, (value) => {
       const path = getOriginalPath(value);
       if (!path) return value;
       if (!assetCopies.has(path)) {
@@ -565,6 +608,9 @@ export async function publishPortfolioContentWithClient(client, content) {
       }
       return assetCopies.get(path);
     });
+    const resumeResult = await attachGeneratedResume(client, content, publishedAssetContent);
+    const resumeWarnings = resumeResult.warnings;
+    const publishedContent = resumeResult.content;
     validatePublishedAssetReferencesWithClient(publishedContent, client);
     const newPaths = collectPublicAssetPaths([
       { value: JSON.stringify(publishedContent), published: true },
@@ -583,7 +629,7 @@ export async function publishPortfolioContentWithClient(client, content) {
     if (error) throw error;
     published = true;
 
-    const warnings = [];
+    const warnings = [...resumeWarnings];
     const { error: draftError } = await client.from('site_settings').upsert(
       {
         key: DRAFT_KEY,
@@ -626,12 +672,12 @@ export async function publishPortfolioContentWithClient(client, content) {
 
 export async function publishPortfolioContent(content) {
   const client = getSupabaseClient();
-  if (!client) throw new Error('Supabase is not configured.');
+  if (!client) throw notConfiguredError();
   return publishPortfolioContentWithClient(client, content);
 }
 
 export async function unpublishPortfolioContentWithClient(client) {
-  if (!client) throw new Error('Supabase is not configured.');
+  if (!client) throw notConfiguredError();
 
   const rows = await loadPortfolioSettings(client);
   const currentContent = rows.find((row) => row.key === CONTENT_KEY);
@@ -724,12 +770,12 @@ export async function unpublishPortfolioContentWithClient(client) {
 
 export async function unpublishPortfolioContent() {
   const client = getSupabaseClient();
-  if (!client) throw new Error('Supabase is not configured.');
+  if (!client) throw notConfiguredError();
   return unpublishPortfolioContentWithClient(client);
 }
 
 export async function savePortfolioDesignWithClient(client, settings) {
-  if (!client) throw new Error('Supabase is not configured.');
+  if (!client) throw notConfiguredError();
 
   await processPendingPublicAssetCleanupWithClient(client);
   const previousPaths = collectPublicAssetPaths(await loadPortfolioSettings(client));
@@ -797,23 +843,23 @@ export async function savePortfolioDesignWithClient(client, settings) {
 
 export async function savePortfolioDesign(settings) {
   const client = getSupabaseClient();
-  if (!client) throw new Error('Supabase is not configured.');
+  if (!client) throw notConfiguredError();
   return savePortfolioDesignWithClient(client, settings);
 }
 
 export async function retryPublicAssetCleanupWithClient(client, paths = []) {
-  if (!client) throw new Error('Supabase is not configured.');
+  if (!client) throw notConfiguredError();
   return queueAndProcessPublicAssetCleanup(client, paths);
 }
 
 export async function retryPublicAssetCleanup(paths = []) {
   const client = getSupabaseClient();
-  if (!client) throw new Error('Supabase is not configured.');
+  if (!client) throw notConfiguredError();
   return retryPublicAssetCleanupWithClient(client, paths);
 }
 
 export async function uploadPortfolioAssetWithClient(client, file, { kind = 'image' } = {}) {
-  if (!client) throw new Error('Supabase is not configured.');
+  if (!client) throw notConfiguredError();
   if (!file || typeof file.type !== 'string' || typeof file.size !== 'number') {
     throw new Error('Choose a file to upload.');
   }
@@ -870,6 +916,6 @@ export async function uploadPortfolioAssetWithClient(client, file, { kind = 'ima
 
 export async function uploadPortfolioAsset(file, options) {
   const client = getSupabaseClient();
-  if (!client) throw new Error('Supabase is not configured.');
+  if (!client) throw notConfiguredError();
   return uploadPortfolioAssetWithClient(client, file, options);
 }

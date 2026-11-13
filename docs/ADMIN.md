@@ -38,7 +38,13 @@ Sidebar groups:
     `Programming & Development`, `Professional`), optional proficiency (0–100) and label.
     Proficiency bars only render when a value is set, and are sorted by the five categories above.
   - **Certificates** — genuine certificates: title, type, issuing organization, date earned,
-    verification URL, and an optional image/PDF upload.
+    verification URL, and an optional image/PDF upload. Uploading a certificate attachment runs
+    browser-side OCR (Tesseract.js for images and scanned PDFs; pdf.js for text PDFs) and
+    auto-fills the form. Nothing is published automatically — review every field, then save
+    the draft as usual. Per-field confidence chips and notes flag anything the OCR could not
+    read reliably; unclear values are left blank rather than invented. Extraction runs entirely
+    in the browser against local vendor assets; documents never leave your machine except for
+    the private upload into the draft-only `originals` bucket.
   - **Achievements** — awards and recognitions (types `Achievement`/`Award`). These live in the same
     store as certificates but are managed and counted separately.
   - **Eligibility** — eligibility examinations and conferred certifications. Never list planned
@@ -57,7 +63,8 @@ Sidebar groups:
     Hidden sections never render publicly, even if they have content.
   - **Website settings** — website title, professional tagline (hero eyebrow), search-engine
     title/description, contact form subject, professional email, GitHub/LinkedIn URLs,
-    professional photo upload, and resume PDF upload.
+    professional photo upload, and an optional resume PDF override. The public resume is
+    regenerated automatically from published content on every publish unless an override is set.
 
 The publish bar (bottom of content tabs) offers: **Preview draft**, **Discard edits**, **Save draft**,
 **Publish to recruiters**, and **Unpublish** when published.
@@ -66,8 +73,10 @@ The publish bar (bottom of content tabs) offers: **Preview draft**, **Discard ed
 
 1. Edit → **Save draft** keeps changes private.
 2. **Preview draft** (`/preview`) renders the exact public page with your draft applied.
-3. **Publish to recruiters** copies referenced private assets into `public-media` and publishes the content.
-   The public site updates immediately.
+3. **Publish to recruiters** copies referenced private assets into `public-media`, publishes the content,
+   and regenerates the downloadable resume PDF from your published content (unless you uploaded a manual
+   resume in Website settings). The public site updates immediately, and the Download resume button
+   serves the regenerated file.
 4. **Unpublish** hides everything and cleans up unreferenced public copies.
 
 Required checks before publishing:
@@ -98,9 +107,11 @@ open `/preview` signed out — you get an owner-required message, not the draft.
 
 ## Common problems
 
-- **"Could not load saved content"** — the draft is invalid JSON or the session expired. Sign out,
-  sign in again; if it persists, restore from a known-good draft (the published copy in
-  `published_sections` is never overwritten by draft saves).
+- **"Could not load saved content"** — the message now names the exact cause. If it reports
+  `Supabase is not configured: VITE_SUPABASE_URL is empty at build time` (or a missing anon key /
+  placeholder origin), the deployment was built without those env vars: set them for the
+  environment being viewed (Production vs Preview) and redeploy. Otherwise the draft is invalid JSON
+  or the session expired — sign out, sign in again, or restore from a known-good draft.
 - **Asset cleanup pending** — unpublished public copies are queued, not leaked silently; use
   *Retry public asset cleanup* on the Overview tab.
 - **Publish blocked** — add at least two screenshots to every project.
