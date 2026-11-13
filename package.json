@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "node scripts/check-csp.mjs --build && vite build",
     "check:csp": "node scripts/check-csp.mjs --strict",
+    "check:contrast": "node scripts/check-contrast.mjs",
     "preview": "vite preview",
     "test": "node --test",
     "reconcile:public-media": "node scripts/reconcile-public-media.mjs"

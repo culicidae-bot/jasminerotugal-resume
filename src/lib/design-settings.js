@@ -123,10 +123,10 @@ export function normalizeDatabaseDesign(raw = {}) {
     ? String(parsed.certificates_layout)
     : settings.certificatesLayout;
 
-  const background = sanitizeHex(parsed.background_color, '#121116');
-  const surface = sanitizeHex(parsed.surface_color, '#1A1920');
-  const primary = sanitizeHex(parsed.primary_color, '#6D3FD8');
-  const text = sanitizeHex(parsed.text_color, '#ECEAF2');
+  const background = sanitizeHex(parsed.background_color, '#0E1116');
+  const surface = sanitizeHex(parsed.surface_color, '#161C24');
+  const primary = sanitizeHex(parsed.primary_color, '#9B83F5');
+  const text = sanitizeHex(parsed.text_color, '#E8EEF5');
 
   return {
     ...settings,
@@ -216,10 +216,15 @@ export function applyDesignTokens(raw = fallbackDesignSettings, requestedTheme) 
   root.style.setProperty('--color-on-primary', colors.onPrimary);
   root.style.setProperty('--color-text', customPalette.text || colors.text);
   root.style.setProperty('--color-muted', colors.muted);
+  root.style.setProperty('--color-dim', colors.dim);
   root.style.setProperty('--color-link', colors.link);
   root.style.setProperty('--color-success', colors.success);
   root.style.setProperty('--color-warning', colors.warning);
   root.style.setProperty('--color-error', colors.error);
+  root.style.setProperty('--color-inverse-bg', colors.inverseBg);
+  root.style.setProperty('--color-inverse-text', colors.inverseText);
+  root.style.setProperty('--color-inverse-soft', colors.inverseSoft);
+  root.style.setProperty('--color-band-soft', colors.bandSoft);
   root.style.setProperty('--site-content-width', settings.contentWidth === 'full' ? '100%' : settings.contentWidth === 'narrow' ? '72rem' : '88rem');
   const spacingMultiplier = settings.sectionSpacing === 'compact' ? 0.75 : settings.sectionSpacing === 'airy' ? 1.3 : 1;
   root.style.setProperty('--site-section-spacing', `${String(Math.min(160, Math.max(40, settings.padding * spacingMultiplier)))}px`);
@@ -227,15 +232,12 @@ export function applyDesignTokens(raw = fallbackDesignSettings, requestedTheme) 
   root.style.setProperty('--theme-mode', theme);
   root.dataset.theme = theme;
 
-  const fontFamily = settings.fontUrl
-    ? '"PortfolioUploaded", Georgia, "Times New Roman", serif'
-    : settings.typography.scale === 'modern'
-      ? 'ui-sans-serif, system-ui, sans-serif'
-      : settings.typography.scale === 'mono'
-        ? 'ui-monospace, SFMono-Regular, monospace'
-        : '"Iowan Old Style", Georgia, "Times New Roman", serif';
-  root.style.setProperty('--font-serif', fontFamily);
-  root.style.setProperty('--font-sans', 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif');
+  if (settings.fontUrl) {
+    const fontFamily = '"PortfolioUploaded", Georgia, "Times New Roman", serif';
+    root.style.setProperty('--font-serif', fontFamily);
+    root.style.setProperty('--font-sans', fontFamily);
+    root.style.setProperty('--font-mono', fontFamily);
+  }
   if (settings.fontUrl) void applyUploadedFont(settings.fontUrl);
 
   return settings;

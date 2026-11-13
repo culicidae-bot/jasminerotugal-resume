@@ -147,6 +147,8 @@ const listFields = {
   ],
   projects: [
     { key: 'title', label: 'Project title' },
+    { key: 'type', label: 'Project type' },
+    { key: 'year', label: 'Year' },
     { key: 'role', label: 'Your role' },
     { key: 'purpose', label: 'Purpose' },
     { key: 'summary', label: 'Description' },
@@ -887,7 +889,7 @@ export default function AdminDashboard({ onLogout }) {
     hero_variant: design.heroVariant || defaultDesign.heroVariant,
     background_color: design.palette?.background || presets[design.activePreset]?.colors.bg || '#0B1120',
     surface_color: design.palette?.surface || presets[design.activePreset]?.colors.surface || '#121A2E',
-    primary_color: design.palette?.primary || presets[design.activePreset]?.colors.primary || '#7C5CE0',
+    primary_color: design.palette?.primary || presets[design.activePreset]?.colors.primary || '#9B83F5',
     text_color: design.palette?.text || presets[design.activePreset]?.colors.text || '#E6EAF4',
     font_url: design.fontUrl || '',
     section_visibility: { ...defaultDesign.sectionVisibility, ...(design.sectionVisibility || {}) },
@@ -1153,6 +1155,21 @@ export default function AdminDashboard({ onLogout }) {
     });
     setDraft(next);
     setStatus(successMessages.photoUploaded);
+  }
+
+  async function uploadAboutImage(file) {
+    const src = await uploadPortfolioAsset(file);
+    const next = updatePath(draft, 'about.image', {
+      ...(draft.about.image || {}),
+      src,
+      alt: draft.about.image?.alt || '',
+      width: 1440,
+      height: 960,
+      focalPoint: 'center',
+      loading: 'lazy',
+    });
+    setDraft(next);
+    setStatus(successMessages.aboutImageUploaded);
   }
 
   async function uploadResume(file) {
@@ -1435,6 +1452,42 @@ export default function AdminDashboard({ onLogout }) {
                 }}
               />
             </label>
+          </div>
+          <TextField
+            label="About image description"
+            value={draft.about.image?.alt || ''}
+            onChange={(value) => setDraft((current) => updatePath(current, 'about.image.alt', value))}
+            hint="Describe the image for screen readers. Keep it factual."
+          />
+          <div className="admin-upload-row">
+            {draft.about.image?.src ? (
+              <DraftAssetImage className="admin-photo-preview" src={draft.about.image.src} alt={draft.about.image?.alt || ''} />
+            ) : (
+              <p className="admin-empty">No About image uploaded yet.</p>
+            )}
+            <label className="admin-upload">
+              <span>Upload About image</span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(event) => {
+                  if (event.target.files?.[0]) uploadAboutImage(event.target.files[0]).catch((error) => setStatus(userFacingMessage(error, 'upload')));
+                  event.target.value = '';
+                }}
+              />
+            </label>
+            {draft.about.image?.src ? (
+              <button
+                type="button"
+                className="text-button"
+                onClick={() => {
+                  setDraft((current) => updatePath(current, 'about.image.src', null));
+                  setStatus(successMessages.assetRemoved);
+                }}
+              >
+                Remove About image
+              </button>
+            ) : null}
           </div>
         </section>
       ) : null}

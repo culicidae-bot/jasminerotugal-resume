@@ -4,6 +4,7 @@ import ImageSlot from '../components/ImageSlot.jsx';
 import Section from '../components/Section.jsx';
 import TodoText from '../components/TodoText.jsx';
 import { CertificateStatus, CertificateType } from '../components/CertificateSignals.jsx';
+import CredentialSpotlight from '../components/CredentialSpotlight.jsx';
 import { formatDate } from '../lib/format.js';
 import { sortByPriority, splitRecords, selectFeatured, FEATURED_LIMITS } from '../lib/prioritize.js';
 import { useSite } from '../lib/site-context.js';
@@ -66,7 +67,10 @@ export default function CertificatesSection({ index }) {
   const [achievementsExpanded, setAchievementsExpanded] = useState(false);
   const publicRecords = content.certificates.filter(isPublicCertificate);
   const { certificates, achievements } = splitRecords(publicRecords);
-  const featuredCertificates = selectFeatured(certificates, FEATURED_LIMITS.certificates);
+  const spotlight = sortByPriority([
+    ...selectFeatured(certificates, FEATURED_LIMITS.certificates),
+    ...selectFeatured(achievements, FEATURED_LIMITS.achievements),
+  ]);
   const featuredAchievements = selectFeatured(achievements, FEATURED_LIMITS.achievements);
   const shownAchievements = achievementsExpanded ? sortByPriority(achievements) : featuredAchievements;
 
@@ -78,9 +82,10 @@ export default function CertificatesSection({ index }) {
       intro={section.intro}
       index={index}
     >
-      {featuredCertificates.length ? (
-        <div className="certificate-block">
-          <CertificateList items={featuredCertificates} content={content} design={design} />
+      {spotlight.length ? (
+        <div className="credential-block">
+          <p className="item-label">{content.ui.featuredCredentials}</p>
+          <CredentialSpotlight records={spotlight} />
         </div>
       ) : null}
       {certificates.length ? (

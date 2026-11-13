@@ -1,30 +1,22 @@
+import { useRef } from 'react';
 import { useSite } from '../lib/site-context.js';
-import ImageSlot, { isUsableImage } from './ImageSlot.jsx';
+import { useFittedText } from '../lib/use-fitted-text.js';
 import ResumeButton from './ResumeButton.jsx';
 import { hasPublicSectionContent } from '../lib/public-sections.js';
 
 export default function Hero() {
   const { content, design } = useSite();
+  const nameRef = useRef(null);
+  useFittedText(nameRef, { minSize: 8 });
   const variant = design.heroVariant;
-  const image = variant === 'cover'
-    ? content.hero.cover || content.hero.portrait
-    : content.hero.portrait;
-  const hasImage = isUsableImage(image);
   const heading = content.hero.name || content.hero.title || content.ui.emptySite.label;
-  const initials = String(content.hero.name || '')
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0] || '')
-    .join('')
-    .toUpperCase();
 
   return (
     <section className="hero" id="home" data-hero={variant} aria-labelledby="hero-name">
-      <div className="hero-inner hero-inner-with-media">
+      <div className="hero-inner">
         <div className="hero-copy">
           {content.hero.eyebrow ? <p className="hero-eyebrow">{content.hero.eyebrow}</p> : null}
-          <h1 id="hero-name">{heading}</h1>
+          <h1 id="hero-name" ref={nameRef}>{heading}</h1>
           {content.hero.name && content.hero.title ? (
             <p className="hero-title">{content.hero.title}</p>
           ) : null}
@@ -37,16 +29,6 @@ export default function Hero() {
               </a>
             ) : null}
           </div>
-        </div>
-        <div className={`hero-media${hasImage ? '' : ' hero-media-placeholder'}`}>
-          {hasImage ? (
-            <ImageSlot image={image} kind="hero" eager />
-          ) : (
-            <div className="hero-portrait-placeholder" role="img" aria-label={content.ui.portraitPlaceholder}>
-              <span className="portrait-placeholder-monogram" aria-hidden="true">{initials}</span>
-              <span className="portrait-placeholder-label">{content.ui.portraitPlaceholder}</span>
-            </div>
-          )}
         </div>
       </div>
     </section>

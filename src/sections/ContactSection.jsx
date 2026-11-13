@@ -2,6 +2,7 @@ import { useId, useRef, useState } from 'react';
 import { ExternalIcon } from '../components/Icons.jsx';
 import { submitContactMessage, validateContact } from '../lib/contact.js';
 import { mailtoSafeAddress, isSafeHttpUrl } from '../lib/urls.js';
+import { useFittedText } from '../lib/use-fitted-text.js';
 import { useSite } from '../lib/site-context.js';
 
 function errorMessage(code, labels) {
@@ -177,6 +178,16 @@ function ContactForm({ contactEmail, hasFunction }) {
   );
 }
 
+function LargeEmailLink({ email }) {
+  const ref = useRef(null);
+  useFittedText(ref, { minSize: 12 });
+  return (
+    <a className="contact-email" ref={ref} href={`mailto:${email}`}>
+      {email}
+    </a>
+  );
+}
+
 export default function ContactSection() {
   const { content } = useSite();
   const labels = content.ui.contactLabels;
@@ -196,44 +207,27 @@ export default function ContactSection() {
         <div className="contact-grid">
           <div className="contact-details">
             <p className="contact-invitation">{content.ui.contactInvitation}</p>
+            {contactEmail ? <LargeEmailLink email={contactEmail} /> : null}
             {!hasContactDetails && formAvailable ? (
               <p className="contact-empty">{labels.detailsUnavailable}</p>
             ) : null}
-            {hasContactDetails ? (
-              <dl className="contact-list">
-                {contactEmail ? (
-                  <div>
-                    <dt>{labels.email}</dt>
-                    <dd>
-                      <a href={`mailto:${contactEmail}`}>{contactEmail}</a>
-                    </dd>
-                  </div>
-                ) : null}
+            {github || linkedin ? (
+              <nav className="contact-socials" aria-label={content.ui.professionalLinks}>
                 {github ? (
-                  <div>
-                    <dt>{labels.github}</dt>
-                    <dd>
-                      <a href={github} target="_blank" rel="noopener noreferrer">
-                        {content.contact.githubLabel}
-                        <ExternalIcon />
-                        <span className="visually-hidden"> ({content.ui.opensNewTab})</span>
-                      </a>
-                    </dd>
-                  </div>
+                  <a className="contact-social-link" href={github} target="_blank" rel="noopener noreferrer">
+                    {content.contact.githubLabel}
+                    <ExternalIcon />
+                    <span className="visually-hidden"> ({content.ui.opensNewTab})</span>
+                  </a>
                 ) : null}
                 {linkedin ? (
-                  <div>
-                    <dt>{labels.linkedin}</dt>
-                    <dd>
-                      <a href={linkedin} target="_blank" rel="noopener noreferrer">
-                        {content.contact.linkedinLabel}
-                        <ExternalIcon />
-                        <span className="visually-hidden"> ({content.ui.opensNewTab})</span>
-                      </a>
-                    </dd>
-                  </div>
+                  <a className="contact-social-link" href={linkedin} target="_blank" rel="noopener noreferrer">
+                    {content.contact.linkedinLabel}
+                    <ExternalIcon />
+                    <span className="visually-hidden"> ({content.ui.opensNewTab})</span>
+                  </a>
                 ) : null}
-              </dl>
+              </nav>
             ) : null}
           </div>
           {formAvailable ? (

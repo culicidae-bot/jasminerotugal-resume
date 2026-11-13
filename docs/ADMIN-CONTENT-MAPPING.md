@@ -31,7 +31,7 @@ AdminDashboard draft state
 | Public section | Admin tab | Admin fields / paths | Public consumer | Automated evidence |
 |---|---|---|---|---|
 | Header brand | Profile | `hero.name`, `hero.brandDetail` | `src/components/Header.jsx` | `src/lib/seo.test.js`, section-flow test |
-| Hero | Profile | `hero.name`, `hero.title`, `hero.eyebrow`, `hero.focus`, `hero.portrait.*` | `src/components/Hero.jsx` | section-flow test, `public-content.test.js` |
+| Hero | Profile | `hero.name`, `hero.title`, `hero.eyebrow`, `hero.focus`, `hero.portrait.*` (portrait renders in About when `about.image` is unset; it never renders in the hero/first screen) | `src/components/Hero.jsx`, `src/sections/AboutSection.jsx` | section-flow test, `public-content.test.js` |
 | About | Profile | `about.introduction`, `about.careerObjective`, `about.educationSummary`, `about.interests`, `about.image.*` | `src/sections/AboutSection.jsx` | section-flow test |
 | Skills | Skills | `skills[]` (category, name, proficiency, label, featured, resume, priority) | `src/sections/SkillsSection.jsx` | section-flow test, `public-sections.test.js` |
 | Certificates | Certificates | `certificates[]` where `type` is not `Award`/`Achievement` (title, type, issuer, dateEarned, verifyUrl, publicFile, featured, resume) | `src/sections/CertificatesSection.jsx`, `src/pages/CertificatesPage.jsx` | section-flow test, `public-sections.test.js` |
@@ -95,5 +95,6 @@ Record the date, tab, record ID, before/after value, and anonymous URLs in the r
 npm test
 npm run build
 npm run check:csp
+npm run check:contrast
 git diff --check
 ```

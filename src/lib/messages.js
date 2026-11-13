@@ -88,6 +88,8 @@ export const successMessages = {
   unpublished: 'Your portfolio is no longer published.',
   imported: 'Records have been imported into the draft. Review and save before publishing.',
   photoUploaded: 'Profile photo uploaded. Publish your portfolio to show it to recruiters.',
+  aboutImageUploaded: 'About image uploaded. Publish your portfolio to show it to recruiters.',
+  assetRemoved: 'The image was removed from the draft. Re-publish to update the public site.',
   resumeUploaded: 'Resume uploaded. Publish your portfolio to make the new file available.',
   fontUploaded: 'Font uploaded. Save design settings to apply it.',
 };

@@ -267,7 +267,11 @@ export const content = {
       projectLink: 'View project',
       sourceLink: 'View source code',
       featured: 'Featured',
+      type: 'Project type',
+      year: 'Year',
+      details: 'Project details',
     },
+    featuredCredentials: 'Featured credentials',
     browserBarLabel: 'Project screenshot',
     educationLabels: {
       institution: 'School',
@@ -280,6 +284,9 @@ export const content = {
     securityWriteupsTitle: 'Write-ups',
     openProfile: 'Open profile',
     verifyEligibility: 'View verification information',
+    verifyCredential: 'View verification information',
+    pauseHighlighting: 'Pause credential highlighting',
+    resumeHighlighting: 'Resume credential highlighting',
     contactLabels: {
       email: 'Email',
       github: 'GitHub',

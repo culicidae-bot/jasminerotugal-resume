@@ -9,6 +9,8 @@ import {
   validateBatchFile,
   formatLimitNote,
 } from '../lib/batch-import.js';
+import { getSupabaseClient } from '../lib/supabase.js';
+import { attachBatchAttachmentsWithClient } from '../lib/batch-attachments.js';
 import { extractPdfPages, segmentPdfPages } from '../lib/pdf-segmenter.js';
 import { parseCertificateText } from '../lib/certificate-parser.js';
 import { classifyDocument } from '../lib/document-classifier.js';
@@ -211,7 +213,7 @@ export default function BatchImportWorkspace({ draft, onImport, onClose, existin
     return map;
   }, [files, segmentStates]);
 
-  const records = useMemo(() => {
+  const items = useMemo(() => {
     const out = [];
     for (const entry of files) {
       const state = segmentStates[entry.id];
@@ -233,7 +235,7 @@ export default function BatchImportWorkspace({ draft, onImport, onClose, existin
         record.category = item.category ?? item.classification.category;
         record.categoryConfidence = item.classification.categoryConfidence;
         record.destinationConfidence = item.classification.destinationConfidence;
-        out.push(record);
+        out.push({ record, entry, item });
       }
     }
     return out;
@@ -241,20 +243,44 @@ export default function BatchImportWorkspace({ draft, onImport, onClose, existin
 
   const [importedSegmentIds] = useState(() => new Set());
 
-  const handleImport = useCallback(() => {
-    if (!records.length) return;
-    const fresh = records.filter((record) => !importedSegmentIds.has(record.id));
-    for (const record of fresh) importedSegmentIds.add(record.id);
-    if (!fresh.length) return;
-    onImport?.(fresh.map((record) => ({ record, destination: record.destination })));
-  }, [records, onImport, importedSegmentIds]);
+  const pendingItems = items.filter(({ record }) => !importedSegmentIds.has(record.id));
+
+  const handleImport = useCallback(async () => {
+    const freshItems = items.filter(({ record }) => !importedSegmentIds.has(record.id));
+    if (!freshItems.length) return;
+    setBusy(true);
+    setBatchNote('');
+    try {
+      const { records: attached, failures } = await attachBatchAttachmentsWithClient(
+        getSupabaseClient(),
+        freshItems,
+      );
+      for (const record of attached) importedSegmentIds.add(record.id);
+      if (attached.length) {
+        onImport?.(attached.map((record) => ({ record, destination: record.destination })));
+      }
+      if (failures.length) {
+        setBatchNote(
+          `${failures.length} record(s) were not imported because their supporting file could not be uploaded: ${failures
+            .map((failure) => `"${failure.title}" — ${failure.error}`)
+            .join('; ')}`,
+        );
+      } else {
+        setBatchNote('');
+      }
+    } catch (error) {
+      setBatchNote(error?.message || 'Attachment upload failed. Nothing was imported.');
+    } finally {
+      setBusy(false);
+    }
+  }, [items, importedSegmentIds, onImport]);
 
   return (
     <section className="batch-import" aria-labelledby="batch-title">
       <div className="editor-section-heading">
         <div>
           <h2 id="batch-title">Import certificates & achievements</h2>
-          <p>Upload one or many PDFs and images. Everything is processed locally; nothing is published or uploaded until you approve the records and save the draft.</p>
+          <p>Upload one or many PDFs and images. Each approved record keeps its source document in private storage until you publish.</p>
         </div>
         <button type="button" className="text-button" onClick={onClose}>Close</button>
       </div>
@@ -388,7 +414,7 @@ export default function BatchImportWorkspace({ draft, onImport, onClose, existin
       {files.length ? (
         <div className="admin-form-actions">
           <button type="button" className="admin-button admin-button-primary" disabled={busy} onClick={processBatch}>Process batch</button>
-          <button type="button" className="admin-button" disabled={busy || !records.length} onClick={handleImport}>Import {records.length} approved record{records.length === 1 ? '' : 's'} into draft</button>
+          <button type="button" className="admin-button" disabled={busy || !pendingItems.length} onClick={() => void handleImport()}>Import {pendingItems.length} approved record{pendingItems.length === 1 ? '' : 's'} into draft</button>
         </div>
       ) : null}
     </section>

@@ -29,84 +29,86 @@ export default function ProjectsSection({ index }) {
       index={index}
     >
       {projects.length ? (
-        <div className="project-list" data-layout={design.projectsLayout}>
-          {projects.map((project) => (
-            <article className="project" key={project.id}>
-              <header className="project-header">
-                <p className="item-label">
-                  <span>{project.role}</span>
-                  {project.featured ? (
-                    <span className="featured-badge">{content.ui.projectLabels.featured}</span>
+        <ol className="project-ledger" data-layout={design.projectsLayout}>
+          {projects.map((project, position) => {
+            const [shot] = projectScreenshots(project);
+            const showMobileImage = position < 3 && shot;
+            return (
+              <li className="project-ledger-item" key={project.id}>
+                {showMobileImage ? (
+                  <div className="project-mobile-image">
+                    <ImageSlot image={shot} kind="project" />
+                  </div>
+                ) : null}
+                <div className="project-ledger-row">
+                  <div className="project-name">
+                    <span className="item-label">
+                      <span>{project.role}</span>
+                      {project.featured ? (
+                        <span className="featured-badge">{content.ui.projectLabels.featured}</span>
+                      ) : null}
+                    </span>
+                    <h3>{project.title}</h3>
+                    <p className="project-purpose">{project.purpose}</p>
+                  </div>
+                  <p className="project-type">{project.type || '—'}</p>
+                  <p className="project-year">{project.year || '—'}</p>
+                  {shot ? (
+                    <div className="project-reveal">
+                      <ImageSlot image={shot} kind="project" />
+                    </div>
                   ) : null}
-                </p>
-                <h3>{project.title}</h3>
-                <p className="project-purpose">{project.purpose}</p>
-              </header>
-              {project.summary ? <p className="project-summary">{project.summary}</p> : null}
-              {isSafeHttpUrl(project.projectUrl) || isSafeHttpUrl(project.sourceUrl) ? (
-                <nav className="project-links" aria-label={`${project.title} links`}>
-                  {isSafeHttpUrl(project.projectUrl) ? (
-                    <a className="text-link external-link" href={project.projectUrl} target="_blank" rel="noopener noreferrer">
-                      {content.ui.projectLabels.projectLink}<ExternalIcon />
-                      <span className="visually-hidden"> ({content.ui.opensNewTab})</span>
-                    </a>
-                  ) : null}
-                  {isSafeHttpUrl(project.sourceUrl) ? (
-                    <a className="text-link external-link" href={project.sourceUrl} target="_blank" rel="noopener noreferrer">
-                      {content.ui.projectLabels.sourceLink}<ExternalIcon />
-                      <span className="visually-hidden"> ({content.ui.opensNewTab})</span>
-                    </a>
-                  ) : null}
-                </nav>
-              ) : null}
-              <div className="project-details">
+                </div>
+                {isSafeHttpUrl(project.projectUrl) || isSafeHttpUrl(project.sourceUrl) ? (
+                  <nav className="project-links" aria-label={`${project.title} links`}>
+                    {isSafeHttpUrl(project.projectUrl) ? (
+                      <a className="text-link external-link" href={project.projectUrl} target="_blank" rel="noopener noreferrer">
+                        {content.ui.projectLabels.projectLink}<ExternalIcon />
+                        <span className="visually-hidden"> ({content.ui.opensNewTab})</span>
+                      </a>
+                    ) : null}
+                    {isSafeHttpUrl(project.sourceUrl) ? (
+                      <a className="text-link external-link" href={project.sourceUrl} target="_blank" rel="noopener noreferrer">
+                        {content.ui.projectLabels.sourceLink}<ExternalIcon />
+                        <span className="visually-hidden"> ({content.ui.opensNewTab})</span>
+                      </a>
+                    ) : null}
+                  </nav>
+                ) : null}
+                <p className="project-summary">{project.summary}</p>
                 <div>
-                  <h4>{content.ui.projectLabels.technologies}</h4>
+                  <h4 className="project-kicker">{content.ui.projectLabels.technologies}</h4>
                   <ul className="inline-list">
                     {(project.technologies || []).map((technology) => (
                       <li key={technology}>{technology}</li>
                     ))}
                   </ul>
                 </div>
-                <div>
-                  <h4>{content.ui.projectLabels.features}</h4>
-                  <ul>
-                    {(project.features || []).map((feature) => (
-                      <li key={feature}>{feature}</li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  <h4>{content.ui.projectLabels.contributions}</h4>
-                  <ul>
-                    {(project.contributions || []).map((contribution) => (
-                      <li key={contribution}>{contribution}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-              <div
-                className="project-media"
-                role="group"
-                aria-label={content.ui.projectLabels.screenshots}
-              >
-                {projectScreenshots(project).map((screenshot, position) => (
-                  <figure className="browser-frame" key={`${project.id}-${position}`}>
-                    <div className="browser-bar" aria-hidden="true">
-                      <span className="browser-dots">
-                        <span />
-                        <span />
-                        <span />
-                      </span>
-                      <span className="browser-title">{content.ui.browserBarLabel}</span>
+                <details className="project-details-disclosure">
+                  <summary>{content.ui.projectLabels.details}</summary>
+                  <div className="project-details-grid">
+                    <div>
+                      <h4 className="project-kicker">{content.ui.projectLabels.features}</h4>
+                      <ul>
+                        {(project.features || []).map((feature) => (
+                          <li key={feature}>{feature}</li>
+                        ))}
+                      </ul>
                     </div>
-                    <ImageSlot image={screenshot} kind="project" />
-                  </figure>
-                ))}
-              </div>
-            </article>
-          ))}
-        </div>
+                    <div>
+                      <h4 className="project-kicker">{content.ui.projectLabels.contributions}</h4>
+                      <ul>
+                        {(project.contributions || []).map((contribution) => (
+                          <li key={contribution}>{contribution}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </details>
+              </li>
+            );
+          })}
+        </ol>
       ) : null}
       {allProjects.length > FEATURED_LIMITS.projects ? (
         <div className="section-footer">
