@@ -272,18 +272,23 @@ export default function AdminAuthPage() {
   return (
     <main className="admin-auth">
       <section className="admin-card" aria-labelledby="admin-title">
-        <p className="admin-kicker">Private area</p>
-        <h1 id="admin-title">Admin sign in</h1>
+        <p className="admin-kicker">ADMINISTRATOR ACCESS</p>
+        <h1 id="admin-title">Welcome back.</h1>
         {mode === 'login' ? (
-          <p>
-            Use the Supabase Auth account registered as this portfolio’s owner. Admin access also
-            requires authenticator verification; Supabase project access alone does not grant it.
-          </p>
+          <>
+            <p>
+              Sign in to manage your professional portfolio, update your information, and maintain
+              your published content.
+            </p>
+            <p className="admin-security-note">
+              For your security, an additional verification step is required after sign-in.
+            </p>
+          </>
         ) : null}
         {mode === 'login' && (
           <form onSubmit={handleLogin} noValidate>
             <div className="admin-field">
-              <label htmlFor="admin-email">Email</label>
+              <label htmlFor="admin-email">Email address</label>
               <input
                 id="admin-email"
                 ref={emailRef}
@@ -316,9 +321,13 @@ export default function AdminAuthPage() {
               />
               <InlineError message={errors.password} id="admin-password-error" />
             </div>
-            <button className="admin-button admin-button-primary" type="submit">Sign in</button>
+            <button className="admin-button admin-button-primary" type="submit">Sign In</button>
           </form>
         )}
+
+        {mode === 'login' ? (
+          <p className="admin-auth-footnote">Authorized administrator access only.</p>
+        ) : null}
 
         {(mode === 'verify' || mode === 'enroll') && (
           <form onSubmit={mode === 'enroll' ? handleEnrollmentVerify : handleVerify} noValidate>
