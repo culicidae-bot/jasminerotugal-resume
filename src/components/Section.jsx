@@ -1,7 +1,7 @@
-export default function Section({ id, label, title, intro, index, children }) {
+export default function Section({ id, label, title, intro, index, className = '', children }) {
   const sectionId = `${id}-title`;
   return (
-    <section className="section" id={id} aria-labelledby={sectionId}>
+    <section className={className ? `section ${className}` : "section"} id={id} aria-labelledby={sectionId}>
       <div className="section-heading">
         <p className="section-kicker">
           <span className="section-number">{String(index).padStart(2, '0')}</span>
