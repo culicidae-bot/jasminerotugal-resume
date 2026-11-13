@@ -308,7 +308,7 @@ export const content = {
       sent: 'Your message was received. Thank you.',
       genericError: 'Your message could not be sent. Please try again later.',
     },
-    contactInvitation: 'For professional inquiries, please use the form below.',
+    contactInvitation: 'Have a question or an opportunity? Send me a message.',
     notFound: {
       eyebrow: 'Error 404',
       title: 'This page is not in the record.',
