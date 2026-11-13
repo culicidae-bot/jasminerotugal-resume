@@ -46,7 +46,7 @@ export const content = {
     about: {
       label: 'Professional profile',
       title: 'A clear direction in information security.',
-      intro: 'An introduction to Jasmine and her professional goals.',
+      intro: 'An introduction to professional background and career goals.',
     },
     skills: {
       label: 'Skills',
@@ -310,8 +310,8 @@ export const content = {
       genericError: 'Your message could not be sent. Please try again later.',
     },
     contactInvitation: 'Have a question or an opportunity? Send me a message.',
-    brandDetail: 'BSIT · ISU Cauayan',
-    footerNote: 'BSIT Student · Isabela State University – Cauayan',
+    brandDetail: 'Professional Portfolio',
+    footerNote: 'Professional Resume Portfolio',
     footerRights: 'Resume portfolio',
     notFound: {
       eyebrow: 'Error 404',
