@@ -3,7 +3,6 @@ import { userFacingMessage } from './messages.js';
 import {
   buildResumePdf,
   RESUME_PUBLIC_URL_PATH,
-  STATIC_RESUME_PATH,
 } from './resume.js';
 
 const CONTENT_KEY = 'portfolio_content';
@@ -21,6 +20,9 @@ const DESIGN_KEYS = [
   'hero_variant',
   'font_url',
   'section_visibility',
+  'skills_layout',
+  'projects_layout',
+  'certificates_layout',
 ];
 const ORIGINALS_BUCKET = 'originals';
 const PUBLIC_MEDIA_BUCKET = 'public-media';
@@ -174,7 +176,6 @@ export function validatePublishedAssetReferencesWithClient(value, client) {
   const visit = (item, key = '') => {
     if (typeof item === 'string') {
       if (!item) return;
-      if (key === 'resumePath' && item === STATIC_RESUME_PATH) return; // bundled static file, safe to serve
       const approvedPublicPath = getPublicMediaPath(item, origin);
       if (
         (ASSET_REFERENCE_FIELDS.has(key) || isStorageReference(item)) &&
@@ -477,8 +478,7 @@ export async function resolvePortfolioAssetUrl(value, client = getSupabaseClient
   return data.signedUrl;
 }
 
-export async function loadPublishedPortfolioContent() {
-  const client = getSupabaseClient();
+export async function loadPublishedPortfolioContentWithClient(client) {
   if (!client) return null;
 
   try {
@@ -500,6 +500,10 @@ export async function loadPublishedPortfolioContent() {
     console.warn('Published portfolio content could not be loaded; using local content.', error);
     return null;
   }
+}
+
+export async function loadPublishedPortfolioContent() {
+  return loadPublishedPortfolioContentWithClient(getSupabaseClient());
 }
 
 export async function loadPortfolioDraftWithClient(client) {
@@ -568,9 +572,9 @@ export async function savePortfolioDraft(content) {
  */
 async function attachGeneratedResume(client, draftContent, publishedContent) {
   const draftPath = typeof draftContent?.resumePath === 'string' ? draftContent.resumePath.trim() : '';
-  const isStatic = draftPath === STATIC_RESUME_PATH;
   const isGenerated = draftPath.endsWith('/public-media/portfolio/resume.pdf');
-  const manualOverride = Boolean(draftPath) && !isStatic && !isGenerated;
+  const isLegacyStatic = /^\/resume\/[^/]+\.pdf$/i.test(draftPath);
+  const manualOverride = Boolean(draftPath) && !isGenerated && !isLegacyStatic;
   if (manualOverride) return { content: publishedContent, warnings: [] };
 
   try {
@@ -586,7 +590,7 @@ async function attachGeneratedResume(client, draftContent, publishedContent) {
     return { content: { ...publishedContent, resumePath: data.publicUrl }, warnings: [] };
   } catch (error) {
     return {
-      content: publishedContent,
+      content: { ...publishedContent, resumePath: '' },
       warnings: [`The resume PDF could not be generated automatically: ${error.message}`],
     };
   }

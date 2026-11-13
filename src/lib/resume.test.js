@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildResumePdf, planResumeSections, RESUME_PUBLIC_URL_PATH, STATIC_RESUME_PATH } from './resume.js';
+import { buildResumePdf, planResumeSections, RESUME_PUBLIC_URL_PATH } from './resume.js';
 
 function sampleContent() {
   return {
@@ -143,8 +143,7 @@ test('featured projects are listed first', () => {
   assert.equal(projects.entries[0].heading, 'Featured Project');
 });
 
-test('resume path constants match the published contract', () => {
-  assert.equal(STATIC_RESUME_PATH, '/resume/RotugalJasmine.pdf');
+test('resume path constant matches the published contract', () => {
   assert.equal(RESUME_PUBLIC_URL_PATH, 'portfolio/resume.pdf');
 });
 
@@ -270,4 +269,16 @@ test('a fully populated resume stays valid and page-count agrees with the planne
   assert.ok(bytes.length > 1000);
   const pages = await getResumePageCount(sampleContent());
   assert.ok(pages >= 1);
+});
+
+test('planned or in-progress eligibility records are excluded from the resume', () => {
+  const content = sampleContent();
+  content.eligibility = [
+    { id: 'e1', title: 'Civil Service Eligibility', issuer: 'Sample Board', dateConferred: '2026-03-10', status: 'Completed' },
+    { id: 'e2', title: 'Planned Certification', issuer: 'Sample Board', status: 'Planned' },
+    { id: 'e3', title: 'In-progress Certification', issuer: 'Sample Board', status: 'In progress' },
+  ];
+  const section = planResumeSections(content).find((item) => item.id === 'eligibility');
+  assert.ok(section, 'expected an eligibility section');
+  assert.deepEqual(section.entries.map((entry) => entry.heading), ['Civil Service Eligibility']);
 });

@@ -703,7 +703,7 @@ main > .home-page > .section:first-child {
   padding-top: var(--site-section-spacing, clamp(3rem, 6.5vw, 7rem));
   padding-bottom: var(--site-section-spacing, clamp(3rem, 6.5vw, 7rem));
   border-top: var(--border-width) solid var(--color-border);
-  scroll-margin-top: 84px;
+  scroll-margin-top: calc(var(--header-offset, 84px) + 1rem);
 }
 
 .site-shell[data-spacing="compact"] .section {
@@ -935,6 +935,27 @@ main > .home-page > .section:first-child {
 
 .empty-label {
   color: var(--color-warning);
+}
+
+.site-empty {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.site-empty h1 {
+  max-width: 26ch;
+  margin-top: 0.6rem;
+  font-size: clamp(2.2rem, 5vw, 4rem);
+}
+
+.site-empty-detail {
+  max-width: 62ch;
+  margin-top: 1rem;
+  color: var(--color-muted);
+  font-size: clamp(1rem, 1.6vw, 1.15rem);
 }
 
 .certificate-list,
@@ -1413,6 +1434,16 @@ main > .home-page > .section:first-child {
   margin-bottom: 2rem;
   font-size: 1.1rem;
   line-height: 1.7;
+}
+
+.contact-empty {
+  max-width: 42ch;
+  padding: 1rem 1.15rem;
+  border: var(--border-width) dashed var(--color-border);
+  border-radius: var(--radius);
+  color: var(--color-muted);
+  font-size: 0.98rem;
+  line-height: 1.65;
 }
 
 .contact-list > div {
@@ -2037,18 +2068,6 @@ main > .home-page > .section:first-child {
 
   .footer-nav {
     max-width: 24rem;
-  }
-}
-
-@media (max-width: 560px) {
-  .section {
-    scroll-margin-top: 128px;
-  }
-}
-
-@media (max-width: 390px) {
-  .section {
-    scroll-margin-top: 170px;
   }
 }
 

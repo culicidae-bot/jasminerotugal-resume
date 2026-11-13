@@ -118,3 +118,18 @@ Before launch:
 2. `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_CONTACT_FUNCTION_URL`, `VITE_SITE_ORIGIN` set for the deployment; real project URL present in `vercel.json` CSP (replace the placeholder origin you may find there).
 3. Sign in at `/admin`, confirm **Overview** shows zero required-item misses, use **Preview draft**, then publish.
 4. Confirm `/` and `/certificates` load for an anonymous browser session, and `/admin`/`/preview` show sign-in/owner-required messages when signed out.
+
+## 9) Connecting a personally registered domain
+
+A `*.vercel.app` address is a platform subdomain. It does **not** satisfy a requirement for a personally registered domain. Register the domain with any registrar, then connect it to this Vercel project:
+
+1. Register the domain in the owner's name and keep registrar and DNS access under the owner's account. Do not use a domain supplied by a third party unless ownership is documented.
+2. In Vercel, open **Project → Settings → Domains**, add the chosen domain (for example `your-personal-domain.com` and optionally `www.your-personal-domain.com`), and select the project.
+3. In the registrar's DNS panel, create the exact records Vercel shows. Typically this is an `A` record for the apex domain pointing at Vercel's displayed IP, and a `CNAME` record for `www` pointing at `cname.vercel-dns.com`. Always copy the records from the Vercel Domains screen instead of guessing.
+4. Wait for Vercel to show **Valid Configuration** and automatic HTTPS. Keep the certificate renewal on automatic.
+5. Choose one canonical host (apex or `www`) in Vercel and let it redirect the other host to it. Update `VITE_SITE_ORIGIN` to the canonical `https://` origin.
+6. Rebuild and redeploy Production after changing `VITE_SITE_ORIGIN` so generated links and the resume footer use the personal domain.
+7. If the deployment uses a custom CSP or CORS allow-list, add the new personal origin there too. The Supabase contact function secret `CONTACT_ALLOWED_ORIGIN` must also be updated to the personal origin in Supabase Edge Function secrets.
+8. Verify `https://<personal-domain>/`, `/certificates`, and `/admin` after DNS has propagated. `*.vercel.app` may remain as a preview alias but is not the delivery address for the assignment.
+
+Do not claim the project is complete for a personal-domain requirement until the registered domain resolves over HTTPS and Production is serving it.

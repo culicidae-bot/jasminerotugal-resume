@@ -10,6 +10,7 @@ export default function Hero() {
     ? content.hero.cover || content.hero.portrait
     : content.hero.portrait;
   const hasImage = isUsableImage(image);
+  const heading = content.hero.name || content.hero.title || content.ui.emptySite.label;
   const initials = String(content.hero.name || '')
     .trim()
     .split(/\s+/)
@@ -23,9 +24,11 @@ export default function Hero() {
       <div className="hero-inner hero-inner-with-media">
         <div className="hero-copy">
           {content.hero.eyebrow ? <p className="hero-eyebrow">{content.hero.eyebrow}</p> : null}
-          <h1 id="hero-name">{content.hero.name}</h1>
-          <p className="hero-title">{content.hero.title}</p>
-          <p className="hero-focus">{content.hero.focus}</p>
+          <h1 id="hero-name">{heading}</h1>
+          {content.hero.name && content.hero.title ? (
+            <p className="hero-title">{content.hero.title}</p>
+          ) : null}
+          {content.hero.focus ? <p className="hero-focus">{content.hero.focus}</p> : null}
           <div className="hero-actions">
             <ResumeButton />
             {hasPublicSectionContent('projects', content) ? (

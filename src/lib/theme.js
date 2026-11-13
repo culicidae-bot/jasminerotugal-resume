@@ -1,6 +1,6 @@
 export function readTheme(fallback = 'dark') {
   try {
-    const saved = window.localStorage.getItem('jasmine-theme');
+    const saved = window.localStorage.getItem('portfolio-theme');
     if (saved === 'light' || saved === 'dark') return saved;
   } catch (error) {
     return fallback === 'light' ? 'light' : 'dark';
@@ -12,7 +12,7 @@ export function applyTheme(theme) {
   const nextTheme = theme === 'light' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', nextTheme);
   try {
-    window.localStorage.setItem('jasmine-theme', nextTheme);
+    window.localStorage.setItem('portfolio-theme', nextTheme);
   } catch (error) {
     return;
   }

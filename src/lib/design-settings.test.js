@@ -59,3 +59,27 @@ test('normalizeDatabaseDesign defaults sectionVisibility to all-visible', () => 
   const settings = normalizeDatabaseDesign({});
   for (const id of sectionVisibilityIds) assert.equal(settings.sectionVisibility[id], true);
 });
+
+test('normalizeDatabaseDesign parses admin-managed layout choices', () => {
+  const settings = normalizeDatabaseDesign({
+    skills_layout: 'two-columns',
+    projects_layout: 'two-column',
+    certificates_layout: 'thumbnails',
+  });
+
+  assert.equal(settings.skillsLayout, 'two-columns');
+  assert.equal(settings.projectsLayout, 'two-column');
+  assert.equal(settings.certificatesLayout, 'thumbnails');
+});
+
+test('normalizeDatabaseDesign rejects unknown layout values', () => {
+  const settings = normalizeDatabaseDesign({
+    skills_layout: 'carousel',
+    projects_layout: 'masonry',
+    certificates_layout: 'cards',
+  });
+
+  assert.equal(settings.skillsLayout, 'rows');
+  assert.equal(settings.projectsLayout, 'stacked');
+  assert.equal(settings.certificatesLayout, 'table');
+});

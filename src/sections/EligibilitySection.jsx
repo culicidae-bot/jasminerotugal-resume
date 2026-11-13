@@ -3,11 +3,13 @@ import { ExternalIcon } from '../components/Icons.jsx';
 import TodoText from '../components/TodoText.jsx';
 import { formatDate } from '../lib/format.js';
 import { isSafeHttpsUrl } from '../lib/urls.js';
+import { isPublicEligibility } from '../lib/public-sections.js';
 import { useSite } from '../lib/site-context.js';
 
 export default function EligibilitySection({ index }) {
   const { content } = useSite();
   const section = content.sections.eligibility;
+  const records = (content.eligibility || []).filter(isPublicEligibility);
 
   return (
     <Section
@@ -17,9 +19,9 @@ export default function EligibilitySection({ index }) {
       intro={section.intro}
       index={index}
     >
-      {content.eligibility.length ? (
+      {records.length ? (
         <ul className="eligibility-list">
-          {content.eligibility.map((record) => {
+          {records.map((record) => {
             const date = formatDate(record.dateConferred);
             return (
               <li className="eligibility-row" key={record.id}>

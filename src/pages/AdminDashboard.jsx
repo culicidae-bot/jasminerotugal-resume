@@ -32,6 +32,7 @@ import {
   splitRecords,
 } from '../lib/prioritize.js';
 import { getResumePageCount, planResumeSections } from '../lib/resume.js';
+import { countPublicProjectScreenshots } from '../lib/public-sections.js';
 import { userFacingMessage, successMessages } from '../lib/messages.js';
 import BatchImportWorkspace from '../components/BatchImportWorkspace.jsx';
 
@@ -69,6 +70,7 @@ const navGroups = [
       ['experience', 'Experience'],
       ['education', 'Education'],
       ['projects', 'Projects'],
+      ['security', 'Security focus'],
     ],
   },
   {
@@ -126,6 +128,9 @@ const listFields = {
     { key: 'title', label: 'Eligibility or certification title' },
     { key: 'issuer', label: 'Issuing organization' },
     { key: 'dateConferred', label: 'Date conferred', type: 'date' },
+    { key: 'status', label: 'Status', options: ['Completed', 'In progress', 'Planned'] },
+    { key: 'verifyUrl', label: 'Verification URL' },
+    { key: 'extra', label: 'Additional details' },
     { key: 'resume', label: 'Include in Resume', type: 'boolean' },
     { key: 'priority', label: 'Display Priority (lower shows first)', type: 'number', min: 0, max: 10000, allowEmpty: true },
   ],
@@ -153,6 +158,15 @@ const listFields = {
     { key: 'featured', label: 'Feature on Website', type: 'boolean' },
     { key: 'resume', label: 'Include in Resume', type: 'boolean' },
     { key: 'priority', label: 'Display Priority (lower shows first)', type: 'number', min: 0, max: 10000, allowEmpty: true },
+  ],
+  securityProfiles: [
+    { key: 'name', label: 'Profile name' },
+    { key: 'detail', label: 'Description' },
+    { key: 'url', label: 'Profile URL' },
+  ],
+  securityWriteups: [
+    { key: 'title', label: 'Write-up title' },
+    { key: 'summary', label: 'Summary' },
   ],
 };
 
@@ -877,6 +891,9 @@ export default function AdminDashboard({ onLogout }) {
     text_color: design.palette?.text || presets[design.activePreset]?.colors.text || '#E6EAF4',
     font_url: design.fontUrl || '',
     section_visibility: { ...defaultDesign.sectionVisibility, ...(design.sectionVisibility || {}) },
+    skills_layout: design.skillsLayout || defaultDesign.skillsLayout,
+    projects_layout: design.projectsLayout || defaultDesign.projectsLayout,
+    certificates_layout: design.certificatesLayout || defaultDesign.certificatesLayout,
   }));
   const [activeTab, setActiveTab] = useState('overview');
   const [status, setStatus] = useState('');
@@ -920,9 +937,9 @@ export default function AdminDashboard({ onLogout }) {
       (project) => Array.isArray(project.screenshots) && project.screenshots.length >= 2,
     );
     return [
-      { label: 'Professional photo uploaded', done: Boolean(draft.hero?.portrait?.src), tab: 'settings' },
-      { label: 'Resume PDF uploaded', done: Boolean(draft.resumePath), tab: 'settings' },
-      { label: 'Professional email set', done: Boolean(draft.contact?.email), tab: 'settings' },
+      { label: 'Professional photo uploaded', done: Boolean(draft.hero?.portrait?.src), tab: 'profile' },
+      { label: 'Resume override uploaded (optional; otherwise generated on publish)', done: Boolean(draft.resumePath), tab: 'settings' },
+      { label: 'Professional email set', done: Boolean(draft.contact?.email), tab: 'profile' },
       { label: 'At least one skill listed', done: (draft.skills || []).length > 0, tab: 'skills' },
       { label: 'Every project has at least 2 screenshots', done: projectsReady, tab: 'projects' },
     ];
@@ -1008,12 +1025,17 @@ export default function AdminDashboard({ onLogout }) {
       setStatus('Update or cancel the open record before publishing.');
       return;
     }
-    const incompleteProject = draft.projects.find(
-      (project) => !Array.isArray(project.screenshots) || project.screenshots.length < 2,
+    const incompleteProjects = draft.projects.filter(
+      (project) => countPublicProjectScreenshots(project) < 2,
     );
-    if (incompleteProject) {
+    if (incompleteProjects.length) {
       setActiveTab('projects');
-      setStatus(`Add at least 2 screenshots to "${incompleteProject.title || 'each project'}" before publishing.`);
+      const names = incompleteProjects
+        .map((project) => `"${project.title?.trim() || 'Untitled project'}"`)
+        .join(', ');
+      setStatus(
+        `Add at least 2 valid screenshots with descriptions before publishing: ${names}.`,
+      );
       return;
     }
 
@@ -1181,6 +1203,7 @@ export default function AdminDashboard({ onLogout }) {
     eligibility: (draft.eligibility || []).length,
     experience: stats.experience,
     projects: stats.projects,
+    security: (draft.securityFocus?.profiles || []).length + (draft.securityFocus?.writeups || []).length,
   };
 
   return (
@@ -1353,18 +1376,33 @@ export default function AdminDashboard({ onLogout }) {
           <div className="admin-form-grid">
             {[
               ['hero.name', 'Full name'],
-              ['hero.title', 'Professional title'],
+              ['hero.title', 'Professional headline'],
+              ['hero.eyebrow', 'Short tagline above your name'],
+              ['hero.brandDetail', 'Header subtitle (optional)'],
               ['hero.focus', 'Short introduction'],
               ['about.introduction', 'About me'],
               ['about.careerObjective', 'Career objective'],
               ['about.educationSummary', 'Education summary'],
+              ['contact.email', 'Professional email'],
+              ['contact.github', 'GitHub profile URL'],
+              ['contact.linkedin', 'LinkedIn profile URL'],
             ].map(([path, label]) => (
               <TextField
                 key={path}
                 label={label}
+                type={path === 'contact.email' ? 'email' : 'text'}
                 multiline={['hero.focus', 'about.introduction', 'about.careerObjective', 'about.educationSummary'].includes(path)}
-                value={readPath(draft, path)}
+                value={readPath(draft, path) || ''}
                 onChange={(value) => setDraft((current) => updatePath(current, path, value))}
+                hint={
+                  path === 'hero.brandDetail'
+                    ? 'Short line under your name in the header. Leave empty to show only your name.'
+                    : path === 'contact.email'
+                      ? 'Shown publicly as a clickable email link. Leave blank to hide it.'
+                      : path === 'contact.github' || path === 'contact.linkedin'
+                        ? 'Use the full https:// profile URL. Leave blank to hide it.'
+                        : undefined
+                }
               />
             ))}
             <TextField
@@ -1386,9 +1424,17 @@ export default function AdminDashboard({ onLogout }) {
             ) : (
               <p className="admin-empty">No photo uploaded yet.</p>
             )}
-            <button className="admin-button" type="button" onClick={() => setActiveTab('settings')}>
-              Manage photo and resume in Website settings
-            </button>
+            <label className="admin-upload">
+              <span>Upload professional photo</span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(event) => {
+                  if (event.target.files?.[0]) uploadProfilePhoto(event.target.files[0]).catch((error) => setStatus(userFacingMessage(error, 'upload')));
+                  event.target.value = '';
+                }}
+              />
+            </label>
           </div>
         </section>
       ) : null}
@@ -1403,7 +1449,7 @@ export default function AdminDashboard({ onLogout }) {
         <RecordListEditor key={`achievements-${editRevision}`} addLabel="Add achievement" title="Achievements" path="certificates" draft={draft} fields={listFields.achievements} onChange={setDraft} onUploadError={(error) => setStatus(userFacingMessage(error, 'upload'))} onEditingChange={reportRecordEditing} allowCertificateFile recordFilter={ACHIEVEMENT_FILTER} fixedType="Achievement" emptyTitle="No achievements yet. Add genuine awards or recognitions only." />
       ) : null}
       {activeTab === 'eligibility' ? (
-        <RecordListEditor key={`eligibility-${editRevision}`} addLabel="Add eligibility record" title="Eligibility and certifications" path="eligibility" draft={draft} fields={listFields.eligibility} onChange={setDraft} onUploadError={(error) => setStatus(userFacingMessage(error, 'upload'))} onEditingChange={reportRecordEditing} emptyTitle="No eligibility records yet. Planned certifications are not shown publicly until completed." />
+        <RecordListEditor key={`eligibility-${editRevision}`} addLabel="Add eligibility record" title="Eligibility and certifications" path="eligibility" draft={draft} fields={listFields.eligibility} onChange={setDraft} onUploadError={(error) => setStatus(userFacingMessage(error, 'upload'))} onEditingChange={reportRecordEditing} emptyTitle="No eligibility records yet. Only Completed records are shown publicly; planned or in-progress credentials stay hidden." />
       ) : null}
       {activeTab === 'experience' ? (
         <div className="editor-stack">
@@ -1451,6 +1497,12 @@ export default function AdminDashboard({ onLogout }) {
       {activeTab === 'projects' ? (
         <RecordListEditor key={`projects-${editRevision}`} addLabel="Add project" title="Projects" path="projects" draft={draft} fields={listFields.projects} onChange={setDraft} onUploadError={(error) => setStatus(userFacingMessage(error, 'upload'))} onEditingChange={reportRecordEditing} allowScreenshots emptyTitle="No projects yet. Add genuine academic, CTF, or personal projects with at least two screenshots each." />
       ) : null}
+      {activeTab === 'security' ? (
+        <div className="editor-stack">
+          <RecordListEditor key={`security-profiles-${editRevision}`} addLabel="Add profile" title="Lab and CTF profiles" path="securityFocus.profiles" draft={draft} fields={listFields.securityProfiles} onChange={setDraft} onUploadError={(error) => setStatus(userFacingMessage(error, 'upload'))} onEditingChange={reportRecordEditing} emptyTitle="No lab or CTF profiles yet." />
+          <RecordListEditor key={`security-writeups-${editRevision}`} addLabel="Add write-up" title="Write-ups" path="securityFocus.writeups" draft={draft} fields={listFields.securityWriteups} onChange={setDraft} onUploadError={(error) => setStatus(userFacingMessage(error, 'upload'))} onEditingChange={reportRecordEditing} emptyTitle="No write-ups yet." />
+        </div>
+      ) : null}
       {activeTab === 'design' ? (
         <section className="editor-section">
           <h2>Visual design</h2>
@@ -1492,6 +1544,27 @@ export default function AdminDashboard({ onLogout }) {
                 <option value="split">Photo beside introduction</option>
                 <option value="centered">Centered</option>
                 <option value="cover">Cover image</option>
+              </select>
+            </div>
+            <div className="admin-field">
+              <label htmlFor="design-skills-layout">Skills layout</label>
+              <select id="design-skills-layout" value={designDraft.skills_layout} onChange={(event) => updateDesign('skills_layout', event.target.value)}>
+                <option value="rows">Single column</option>
+                <option value="two-columns">Two columns</option>
+              </select>
+            </div>
+            <div className="admin-field">
+              <label htmlFor="design-projects-layout">Projects layout</label>
+              <select id="design-projects-layout" value={designDraft.projects_layout} onChange={(event) => updateDesign('projects_layout', event.target.value)}>
+                <option value="stacked">Stacked</option>
+                <option value="two-column">Two columns</option>
+              </select>
+            </div>
+            <div className="admin-field">
+              <label htmlFor="design-certificates-layout">Certificates layout</label>
+              <select id="design-certificates-layout" value={designDraft.certificates_layout} onChange={(event) => updateDesign('certificates_layout', event.target.value)}>
+                <option value="table">Compact list</option>
+                <option value="thumbnails">Thumbnails</option>
               </select>
             </div>
             <TextField label="Section padding (40–160 px)" type="number" value={designDraft.section_padding} onChange={(value) => updateDesign('section_padding', Math.min(160, Math.max(40, Number(value) || 40)))} />
@@ -1544,32 +1617,19 @@ export default function AdminDashboard({ onLogout }) {
           <div className="editor-section-heading">
             <div>
               <h2>Website settings</h2>
-              <p>Site title, tagline, social links, contact information, photo, and resume. Saved with your draft; publish when ready.</p>
+              <p>Search appearance, contact form subject, and the optional resume override. Profile details and contact links are managed on the Profile tab. Saved with your draft; publish when ready.</p>
             </div>
           </div>
           <div className="admin-form-grid">
-            <TextField label="Website title (header and browser tab)" value={draft.meta.siteName} onChange={(value) => setDraft((current) => updatePath(current, 'meta.siteName', value))} />
-            <TextField label="Professional tagline (hero eyebrow)" value={draft.hero.eyebrow} onChange={(value) => setDraft((current) => updatePath(current, 'hero.eyebrow', value))} hint="Short phrase shown above your name, for example your focus area. Leave empty to hide it." />
-            <TextField label="Search engine title" value={draft.meta.homeTitle} onChange={(value) => setDraft((current) => updatePath(current, 'meta.homeTitle', value))} />
-            <TextField label="Search engine description" multiline value={draft.meta.homeDescription} onChange={(value) => setDraft((current) => updatePath(current, 'meta.homeDescription', value))} />
+            <TextField label="Home page search title" value={draft.meta.homeTitle} onChange={(value) => setDraft((current) => updatePath(current, 'meta.homeTitle', value))} hint="Leave empty to derive the title from your name and headline." />
+            <TextField label="Home page search description" multiline value={draft.meta.homeDescription} onChange={(value) => setDraft((current) => updatePath(current, 'meta.homeDescription', value))} hint="Leave empty to use your short introduction." />
+            <TextField label="Certificates page search title" value={draft.meta.certificatesTitle} onChange={(value) => setDraft((current) => updatePath(current, 'meta.certificatesTitle', value))} hint="Leave empty to derive the title from your name." />
+            <TextField label="Certificates page search description" multiline value={draft.meta.certificatesDescription} onChange={(value) => setDraft((current) => updatePath(current, 'meta.certificatesDescription', value))} />
+            <TextField label="Not found page title" value={draft.meta.notFoundTitle} onChange={(value) => setDraft((current) => updatePath(current, 'meta.notFoundTitle', value))} />
+            <TextField label="Not found page description" multiline value={draft.meta.notFoundDescription} onChange={(value) => setDraft((current) => updatePath(current, 'meta.notFoundDescription', value))} />
             <TextField label="Contact form subject line" value={draft.contactSubject} onChange={(value) => setDraft((current) => updatePath(current, 'contactSubject', value))} />
-            <TextField label="Professional email" type="email" value={draft.contact.email || ''} onChange={(value) => setDraft((current) => updatePath(current, 'contact.email', value))} />
-            <TextField label="GitHub profile URL" value={draft.contact.github || ''} onChange={(value) => setDraft((current) => updatePath(current, 'contact.github', value))} />
-            <TextField label="LinkedIn profile URL" value={draft.contact.linkedin || ''} onChange={(value) => setDraft((current) => updatePath(current, 'contact.linkedin', value))} />
           </div>
           <div className="admin-upload-row">
-            <label className="admin-upload">
-              <span>Upload professional photo</span>
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={(event) => {
-                  if (event.target.files?.[0]) uploadProfilePhoto(event.target.files[0]).catch((error) => setStatus(userFacingMessage(error, 'upload')));
-                  event.target.value = '';
-                }}
-              />
-            </label>
-            {draft.hero.portrait?.src ? <DraftAssetImage className="admin-photo-preview" src={draft.hero.portrait.src} alt={draft.hero.portrait.alt || ''} /> : <p className="admin-empty">No photo uploaded yet.</p>}
             <label className="admin-upload">
               <span>Upload resume PDF (optional override)</span>
               <input
@@ -1582,7 +1642,8 @@ export default function AdminDashboard({ onLogout }) {
               />
             </label>
             {draft.resumePath ? <DraftAssetLink src={draft.resumePath}>Open current resume</DraftAssetLink> : null}
-            <p className="admin-settings-note">As of this build, the public resume PDF is regenerated automatically from your published content on every publish. Uploading a PDF here overrides that behavior until you clear the upload.</p>
+            {draft.resumePath ? <button className="text-button" type="button" onClick={() => setDraft((current) => ({ ...current, resumePath: '' }))}>Clear override and generate automatically</button> : null}
+            <p className="admin-settings-note">The public resume PDF is generated automatically from your published content on every publish. Uploading a PDF here overrides that behavior until you clear the upload.</p>
           </div>
         </section>
       ) : null}

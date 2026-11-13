@@ -32,8 +32,11 @@ Sidebar groups:
 - **Overview** — content counts (projects, certificates, achievements, skills, education, experience),
   publish state, last content save time, pending asset cleanup, and a launch-readiness checklist.
 - **Content**
-  - **Profile** — name, professional title, short introduction, about text, career objective,
-    education summary, IT interests, portrait alt text.
+  - **Profile** — full name, professional headline, short tagline, optional header subtitle,
+    short introduction, about text, career objective, education summary, IT interests,
+    professional email, GitHub URL, LinkedIn URL, portrait description, and the professional
+    photo upload. These contact fields are the single authoritative source reused by the
+    homepage, contact section, footer, and generated resume.
   - **Skills** — skills with category (`Technical`, `Networking`, `Cybersecurity`,
     `Programming & Development`, `Professional`), optional proficiency (0–100) and label.
     Proficiency bars only render when a value is set, and are sorted by the five categories above.
@@ -47,24 +50,29 @@ Sidebar groups:
     the private upload into the draft-only `originals` bucket.
   - **Achievements** — awards and recognitions (types `Achievement`/`Award`). These live in the same
     store as certificates but are managed and counted separately.
-  - **Eligibility** — eligibility examinations and conferred certifications. Never list planned
-    certifications here as if they were completed.
+  - **Eligibility** — eligibility examinations and conferred certifications. Each record has a
+    **Status** field; only `Completed` records (or legacy records with no status) appear publicly
+    and in the generated resume. `In progress` and `Planned` records stay in the draft only.
   - **Experience** — four groups: work, internship/OJT, volunteer, and relevant academic/CTF activities.
   - **Education** — tertiary, secondary, and elementary entries (institution, course/level,
     year graduated or expected, achievement).
   - **Projects** — title, role, purpose, description, technologies, features, contributions,
     project/source URLs, screenshots (**minimum two before publishing**), and a *featured* flag.
     Featured projects are shown first publicly with a `Featured` badge.
+  - **Security focus** — lab/CTF profiles (name, description, URL) and write-ups (title, summary).
+    The public security section renders only when at least one profile or write-up is published.
 - **Site**
   - **Design** — color preset (Midnight navy default, Graphite Violet, Ivory Light), font style,
-    content width, section spacing, section padding, hero layout (split/centered/cover), accent colors,
-    WOFF2 font upload, and **section visibility** checkboxes for all ten public sections
+    content width, section spacing, section padding, hero layout (split/centered/cover), skills
+    layout, projects layout, certificates layout, accent colors, WOFF2 font upload, and
+    **section visibility** checkboxes for all ten public sections
     (hero, about, skills, certificates, eligibility, experience, projects, education, security, contact).
     Hidden sections never render publicly, even if they have content.
-  - **Website settings** — website title, professional tagline (hero eyebrow), search-engine
-    title/description, contact form subject, professional email, GitHub/LinkedIn URLs,
-    professional photo upload, and an optional resume PDF override. The public resume is
-    regenerated automatically from published content on every publish unless an override is set.
+  - **Website settings** — search-engine titles/descriptions for the home, certificates, and
+    not-found pages, the contact form subject, and an optional resume PDF override. Any blank
+    search field is derived from the Profile name/headline/introduction. The public resume is
+    generated automatically from published content on every publish unless a manual override is set.
+    Header branding always comes from the Profile name, so there is no second site-title field.
 
 The publish bar (bottom of content tabs) offers: **Preview draft**, **Discard edits**, **Save draft**,
 **Publish to recruiters**, and **Unpublish** when published.
@@ -76,13 +84,14 @@ The publish bar (bottom of content tabs) offers: **Preview draft**, **Discard ed
 3. **Publish to recruiters** copies referenced private assets into `public-media`, publishes the content,
    and regenerates the downloadable resume PDF from your published content (unless you uploaded a manual
    resume in Website settings). The public site updates immediately, and the Download resume button
-   serves the regenerated file.
-4. **Unpublish** hides everything and cleans up unreferenced public copies.
+   serves the regenerated file. There is no bundled static resume: if generation fails, the button
+   reports that the resume is unavailable and publishing continues with a warning.
+4. **Unpublish** hides everything and cleans up unreferenced public copies while preserving the private draft.
 
 Required checks before publishing:
 
 - every project needs at least two screenshots (enforced — publish is blocked otherwise);
-- the resume PDF and portrait should be uploaded first (see the Overview readiness checklist).
+- a professional photo and at least one skill are strongly recommended (see the Overview checklist).
 
 ## Content conventions
 

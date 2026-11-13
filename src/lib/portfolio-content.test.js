@@ -4,6 +4,7 @@ import {
   listPublicMediaInventoryWithClient,
   loadPortfolioDraftWithClient,
   loadPendingPublicAssetCleanupWithClient,
+  loadPublishedPortfolioContentWithClient,
   mergePublishedPortfolioContent,
   movePublicMediaToPrivateWithClient,
   publishPortfolioContentWithClient,
@@ -16,6 +17,7 @@ import {
   validatePublishedAssetReferencesWithClient,
 } from './portfolio-content.js';
 import { content } from '../data/content.js';
+import { normalizeDatabaseDesign } from './design-settings.js';
 
 function createStorageClient(initialSettings = []) {
   const settings = [...initialSettings];
@@ -59,6 +61,26 @@ function createStorageClient(initialSettings = []) {
                   if (paths.includes(cleanupQueue[index].storage_path)) cleanupQueue.splice(index, 1);
                 }
                 return { error: null };
+              },
+            };
+          },
+        };
+      }
+
+      if (table === 'published_sections') {
+        return {
+          select() {
+            return {
+              eq(_column, key) {
+                return {
+                  maybeSingle: async () => {
+                    const row = settings.find((item) => item.key === key && item.published);
+                    return {
+                      data: row && typeof row.value === 'string' ? { value: row.value } : null,
+                      error: null,
+                    };
+                  },
+                };
               },
             };
           },
@@ -196,12 +218,21 @@ test('saved profile and null education values load into the admin form', () => {
   assert.equal(merged.education.secondary.institution, 'Secondary School');
 });
 
-test('older published content retains the verified academic activity from the base profile', () => {
-  const merged = mergePublishedPortfolioContent(content, {
+test('older published content keeps shared base records when a group is omitted', () => {
+  const baseWithActivity = {
+    ...content,
+    experience: {
+      work: [],
+      internship: [],
+      volunteer: [],
+      academic: [{ id: 'base-activity', role: 'Participant', organization: 'Base Org' }],
+    },
+  };
+  const merged = mergePublishedPortfolioContent(baseWithActivity, {
     experience: { work: [], internship: [], volunteer: [] },
   });
 
-  assert.deepEqual(merged.experience.academic, content.experience.academic);
+  assert.deepEqual(merged.experience.academic, baseWithActivity.experience.academic);
 });
 
 test('invalid saved portfolio content fails closed instead of loading fallback content', async () => {
@@ -506,8 +537,8 @@ test('legacy migration preserves an existing private object instead of overwriti
 const testResumeDraft = {
   ...content,
   projects: content.projects.map((project) => project),
-  hero: { ...content.hero, name: 'Jasmine L. Rotugal' },
-  resumePath: '/resume/RotugalJasmine.pdf',
+  hero: { ...content.hero, name: 'Portfolio Owner' },
+  resumePath: '',
 };
 
 test('publishing regenerates the public resume PDF and points the public site at it', async () => {
@@ -528,7 +559,7 @@ test('publishing regenerates the public resume PDF and points the public site at
   const publicRow = client.settings.find((row) => row.key === 'portfolio_content');
   const draftRow = client.settings.find((row) => row.key === 'portfolio_content_draft');
   assert.equal(JSON.parse(publicRow.value).resumePath, result.content.resumePath);
-  assert.equal(JSON.parse(draftRow.value).resumePath, '/resume/RotugalJasmine.pdf');
+  assert.equal(JSON.parse(draftRow.value).resumePath, '');
 });
 
 test('a manual resume upload overrides generation and is copied to public-media instead', async () => {
@@ -571,7 +602,161 @@ test('resume generation failure surfaces as a warning and does not block publish
   });
 
   const result = await publishPortfolioContentWithClient(failing, testResumeDraft);
-  assert.equal(result.content.resumePath, '/resume/RotugalJasmine.pdf');
+  assert.equal(result.content.resumePath, '');
   assert.ok(result.warnings.some((warning) => warning.includes('resume')), 'expected a resume warning');
   assert.ok(client.settings.some((row) => row.key === 'portfolio_content' && row.published === true));
+});
+
+test('every public section survives draft save, reload, publish, anonymous load, and unpublish', async () => {
+  const client = createStorageClient([
+    {
+      key: 'portfolio_content',
+      value: JSON.stringify({ hero: { name: 'Published Owner' }, contact: { email: 'published@example.org' } }),
+      published: true,
+    },
+  ]);
+  const publishedRow = client.settings.find((row) => row.key === 'portfolio_content');
+  const publishedValueBefore = publishedRow.value;
+
+  const edited = {
+    ...content,
+    hero: {
+      ...content.hero,
+      name: 'Draft Owner',
+      title: 'Security Analyst',
+      eyebrow: 'Cybersecurity portfolio',
+      brandDetail: 'Security · Operations',
+      focus: 'Draft introduction for the public profile.',
+    },
+    about: {
+      ...content.about,
+      introduction: 'Draft about section.',
+      careerObjective: 'Draft career objective.',
+      educationSummary: 'Draft education summary.',
+      interests: ['Network defense', 'Threat detection'],
+    },
+    skills: [{ id: 'skill-1', category: 'Cybersecurity', name: 'Threat detection', proficiency: 80, featured: true }],
+    certificates: [
+      { id: 'cert-1', title: 'Draft Certificate', type: 'IT Certification', issuer: 'Draft Issuer', dateEarned: '2026-01-01', featured: true },
+      { id: 'award-1', title: 'Draft Award', type: 'Award', issuer: 'Draft Award Body', dateEarned: '2026-02-02', featured: true },
+    ],
+    eligibility: [{ id: 'elig-1', title: 'Draft Eligibility', issuer: 'Draft Board', dateConferred: '2026-03-03', status: 'Completed' }],
+    experience: {
+      work: [{ id: 'work-1', role: 'Analyst', organization: 'Draft Employer', period: '2026', responsibilities: ['Draft responsibility'] }],
+      internship: [{ id: 'intern-1', role: 'Intern', organization: 'Draft Office', period: '2025' }],
+      volunteer: [{ id: 'vol-1', role: 'Volunteer', organization: 'Draft Program', period: '2025' }],
+      academic: [{ id: 'acad-1', role: 'CTF participant', organization: 'Draft CTF', summary: 'Draft activity.' }],
+    },
+    projects: [{
+      id: 'project-1',
+      title: 'Draft Project',
+      role: 'Developer',
+      purpose: 'Draft purpose.',
+      summary: 'Draft description.',
+      technologies: ['React'],
+      features: ['Draft feature'],
+      contributions: ['Draft contribution'],
+      screenshots: [
+        { src: 'https://project.example/storage/v1/object/public/public-media/portfolio/one.png', alt: 'First screenshot', width: 800, height: 600 },
+        { src: 'https://project.example/storage/v1/object/public/public-media/portfolio/two.png', alt: 'Second screenshot', width: 800, height: 600 },
+      ],
+      featured: true,
+    }],
+    education: {
+      tertiary: { level: 'Tertiary', institution: 'Draft University', course: 'Draft Course', yearGraduated: '2027', achievement: null },
+      secondary: { level: 'Secondary', institution: 'Draft High School', yearGraduated: '2023', achievement: null },
+      elementary: { level: 'Elementary', institution: 'Draft Elementary School', yearGraduated: '2019' },
+    },
+    securityFocus: {
+      profiles: [{ id: 'profile-1', name: 'Draft Lab Profile', detail: 'Draft lab description.', url: 'https://example.org/lab' }],
+      writeups: [{ id: 'writeup-1', title: 'Draft Write-up', summary: 'Draft write-up summary.' }],
+    },
+    contact: {
+      ...content.contact,
+      email: 'draft.owner@example.org',
+      github: 'https://github.com/draft-owner',
+      linkedin: 'https://www.linkedin.com/in/draft-owner',
+    },
+    resumePath: '',
+  };
+
+  await savePortfolioDraftWithClient(client, edited);
+  const reloaded = await loadPortfolioDraftWithClient(client);
+  assert.equal(reloaded.published, true);
+  assert.equal(reloaded.content.hero.name, 'Draft Owner');
+  assert.equal(reloaded.content.contact.github, 'https://github.com/draft-owner');
+  assert.equal(publishedRow.value, publishedValueBefore, 'saving a draft must not change published content');
+
+  const { content: published } = await publishPortfolioContentWithClient(client, reloaded.content);
+  assert.equal(published.hero.name, 'Draft Owner');
+  assert.equal(published.hero.brandDetail, 'Security · Operations');
+  assert.equal(published.about.interests.length, 2);
+  assert.equal(published.skills[0].name, 'Threat detection');
+  assert.equal(published.certificates.find((item) => item.id === 'cert-1').title, 'Draft Certificate');
+  assert.equal(published.certificates.find((item) => item.id === 'award-1').title, 'Draft Award');
+  assert.equal(published.eligibility[0].title, 'Draft Eligibility');
+  assert.equal(published.experience.work[0].organization, 'Draft Employer');
+  assert.equal(published.experience.internship[0].organization, 'Draft Office');
+  assert.equal(published.experience.volunteer[0].organization, 'Draft Program');
+  assert.equal(published.experience.academic[0].organization, 'Draft CTF');
+  assert.equal(published.projects[0].title, 'Draft Project');
+  assert.equal(published.education.tertiary.institution, 'Draft University');
+  assert.equal(published.education.secondary.institution, 'Draft High School');
+  assert.equal(published.education.elementary.institution, 'Draft Elementary School');
+  assert.equal(published.securityFocus.profiles[0].name, 'Draft Lab Profile');
+  assert.equal(published.securityFocus.writeups[0].title, 'Draft Write-up');
+  assert.equal(published.contact.linkedin, 'https://www.linkedin.com/in/draft-owner');
+  assert.match(published.resumePath, /\/public-media\/portfolio\/resume\.pdf$/);
+
+  const anonymous = await loadPublishedPortfolioContentWithClient(client);
+  assert.equal(anonymous.hero.name, 'Draft Owner');
+  assert.equal(anonymous.contact.email, 'draft.owner@example.org');
+
+  client.objects.set('public-media/portfolio/one.png', new Blob(['one']));
+  client.objects.set('public-media/portfolio/two.png', new Blob(['two']));
+  const unpublished = await unpublishPortfolioContentWithClient(client);
+  assert.equal(await loadPublishedPortfolioContentWithClient(client), null);
+  assert.equal(unpublished.content.hero.name, 'Draft Owner');
+  assert.equal(unpublished.content.contact.github, 'https://github.com/draft-owner');
+});
+
+test('design layout choices persist through the published design settings', async () => {
+  const client = createStorageClient([]);
+  const { settings } = await savePortfolioDesignWithClient(client, {
+    theme_mode: 'midnight',
+    skills_layout: 'two-columns',
+    projects_layout: 'two-column',
+    certificates_layout: 'thumbnails',
+    section_visibility: { about: false, projects: true },
+  });
+
+  assert.equal(settings.skills_layout, 'two-columns');
+  const rows = Object.fromEntries(client.settings.map((row) => [row.key, row.value]));
+  assert.equal(rows.skills_layout, 'two-columns');
+  assert.equal(rows.projects_layout, 'two-column');
+  assert.equal(rows.certificates_layout, 'thumbnails');
+  assert.equal(client.settings.every((row) => row.published), true);
+
+  const normalized = normalizeDatabaseDesign(rows);
+  assert.equal(normalized.skillsLayout, 'two-columns');
+  assert.equal(normalized.projectsLayout, 'two-column');
+  assert.equal(normalized.certificatesLayout, 'thumbnails');
+  assert.equal(normalized.sectionVisibility.about, false);
+});
+
+test('a legacy static resume path is replaced by the generated published resume', async () => {
+  const client = createStorageClient([]);
+  const legacyDraft = {
+    ...testResumeDraft,
+    resumePath: '/resume/legacy-file.pdf',
+  };
+
+  const result = await publishPortfolioContentWithClient(client, legacyDraft);
+
+  assert.match(result.content.resumePath, /\/public-media\/portfolio\/resume\.pdf$/);
+  assert.ok(client.uploads.some((entry) => entry.path === 'portfolio/resume.pdf'));
+  assert.equal(
+    JSON.parse(client.settings.find((row) => row.key === 'portfolio_content_draft').value).resumePath,
+    '/resume/legacy-file.pdf',
+  );
 });

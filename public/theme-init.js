@@ -1,7 +1,7 @@
 (function () {
   var theme = 'dark';
   try {
-    var saved = window.localStorage.getItem('jasmine-theme');
+    var saved = window.localStorage.getItem('portfolio-theme');
     if (saved === 'light' || saved === 'dark') {
       theme = saved;
     } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {

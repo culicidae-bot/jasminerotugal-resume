@@ -11,6 +11,7 @@ import { formatDate } from '../lib/format.js';
 import { isSafeHttpsUrl } from '../lib/urls.js';
 import { useSite } from '../lib/site-context.js';
 import { isPublicCertificate } from '../lib/public-sections.js';
+import { resolveSeo } from '../lib/seo.js';
 
 function CertificateDialog({ certificate, dialogRef, closeRef, onClose }) {
   const { content } = useSite();
@@ -95,6 +96,7 @@ function CertificateDialog({ certificate, dialogRef, closeRef, onClose }) {
 
 export default function CertificatesPage() {
   const { content } = useSite();
+  const seo = resolveSeo(content, 'certificates');
   const [searchParams, setSearchParams] = useSearchParams();
   const dialogRef = useRef(null);
   const closeRef = useRef(null);
@@ -168,8 +170,8 @@ export default function CertificatesPage() {
   return (
     <article className="register-page">
       <Seo
-        title={content.meta.certificatesTitle}
-        description={content.meta.certificatesDescription}
+        title={seo.title}
+        description={seo.description}
       />
       <header className="page-heading">
         <p className="page-kicker">{content.ui.certificateRegisterTitle}</p>

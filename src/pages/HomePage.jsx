@@ -11,6 +11,7 @@ import EducationSection from '../sections/EducationSection.jsx';
 import SecuritySection, { hasSecurityContent } from '../sections/SecuritySection.jsx';
 import ContactSection from '../sections/ContactSection.jsx';
 import { hasPublicSectionContent } from '../lib/public-sections.js';
+import { resolveSeo } from '../lib/seo.js';
 
 const sectionComponents = {
   about: AboutSection,
@@ -26,6 +27,7 @@ const sectionComponents = {
 
 export default function HomePage() {
   const { content, design } = useSite();
+  const seo = resolveSeo(content, 'home');
   const visibleOrder = design.sectionOrder.filter((id) => {
     if (id === 'security' && !hasSecurityContent(content)) return false;
     return (
@@ -46,12 +48,25 @@ export default function HomePage() {
 
   return (
     <div className="home-page">
-      <Seo title={content.meta.homeTitle} description={content.meta.homeDescription} />
-      {visibleOrder.map((id) => {
-        if (id === 'hero') return <Hero key="hero" />;
-        const SectionComponent = sectionComponents[id];
-        return <SectionComponent key={id} index={sectionNumbers[id]} />;
-      })}
+      <Seo title={seo.title} description={seo.description} />
+      {visibleOrder.length === 0 ? (
+        <section className="section site-empty" aria-labelledby="site-empty-title">
+          <p className="section-kicker">{content.ui.emptySite.label}</p>
+          <h1 id="site-empty-title">{content.ui.emptySite.title}</h1>
+          <p className="site-empty-detail">{content.ui.emptySite.detail}</p>
+        </section>
+      ) : (
+        <>
+          {visibleOrder.includes('hero') ? null : (
+            <h1 className="visually-hidden">{content.hero.name || seo.title}</h1>
+          )}
+          {visibleOrder.map((id) => {
+            if (id === 'hero') return <Hero key="hero" />;
+            const SectionComponent = sectionComponents[id];
+            return <SectionComponent key={id} index={sectionNumbers[id]} />;
+          })}
+        </>
+      )}
     </div>
   );
 }

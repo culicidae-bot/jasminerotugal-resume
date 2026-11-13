@@ -1,8 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  countPublicProjectScreenshots,
   getSkillProficiency,
   hasPublicSectionContent,
+  isPublicEligibility,
   isPublicNavigationItem,
 } from './public-sections.js';
 
@@ -17,11 +19,36 @@ const emptyContent = {
 };
 
 test('only verified, substantive sections are available for public navigation', () => {
-  assert.equal(hasPublicSectionContent('about', emptyContent), true);
-  assert.equal(hasPublicSectionContent('contact', emptyContent), true);
+  assert.equal(hasPublicSectionContent('hero', emptyContent), false);
+  assert.equal(hasPublicSectionContent('about', emptyContent), false);
+  assert.equal(hasPublicSectionContent('contact', emptyContent), false);
   assert.equal(hasPublicSectionContent('skills', emptyContent), false);
   assert.equal(isPublicNavigationItem({ to: '/#projects' }, emptyContent), false);
+  assert.equal(isPublicNavigationItem({ to: '/#contact' }, emptyContent), false);
   assert.equal(isPublicNavigationItem({ to: '/certificates' }, emptyContent), false);
+});
+
+test('hero, about, and contact only render once owner content exists', () => {
+  const populated = {
+    ...emptyContent,
+    hero: { name: 'A. Person', title: 'Analyst', focus: 'Network security' },
+    about: { introduction: 'Professional introduction.', interests: ['Network security'] },
+    contact: { email: 'person@example.com' },
+  };
+  assert.equal(hasPublicSectionContent('hero', populated), true);
+  assert.equal(hasPublicSectionContent('about', populated), true);
+  assert.equal(hasPublicSectionContent('contact', populated), true);
+  assert.equal(isPublicNavigationItem({ to: '/#contact' }, populated), true);
+
+  const placeholder = {
+    ...emptyContent,
+    hero: { name: '[TODO: add name]' },
+    about: { careerObjective: '[TODO: add objective]' },
+    contact: { email: 'not-an-email' },
+  };
+  assert.equal(hasPublicSectionContent('hero', placeholder), false);
+  assert.equal(hasPublicSectionContent('about', placeholder), false);
+  assert.equal(hasPublicSectionContent('contact', placeholder), false);
 });
 
 test('relevant academic activities can be published without inventing employment', () => {
@@ -83,4 +110,40 @@ test('education and certificate navigation omit unfinished records', () => {
   };
   assert.equal(hasPublicSectionContent('education', content), false);
   assert.equal(hasPublicSectionContent('certificates', content), false);
+});
+
+test('only completed eligibility records are presented as attained', () => {
+  assert.equal(isPublicEligibility({ title: 'Civil Service Eligibility' }), true);
+  assert.equal(
+    isPublicEligibility({ title: 'Civil Service Eligibility', status: 'Completed' }),
+    true,
+  );
+  assert.equal(isPublicEligibility({ title: 'Planned certification', status: 'Planned' }), false);
+  assert.equal(isPublicEligibility({ title: 'In progress', status: 'In progress' }), false);
+  assert.equal(isPublicEligibility({ title: '[TODO: add eligibility]' }), false);
+  assert.equal(isPublicEligibility({ title: '' }), false);
+
+  const plannedOnly = {
+    ...emptyContent,
+    eligibility: [{ title: 'Planned certification', status: 'Planned' }],
+  };
+  assert.equal(hasPublicSectionContent('eligibility', plannedOnly), false);
+
+  const completed = {
+    ...emptyContent,
+    eligibility: [{ title: 'Civil Service Eligibility', status: 'Completed' }],
+  };
+  assert.equal(hasPublicSectionContent('eligibility', completed), true);
+});
+
+test('project publish validation counts only usable screenshots', () => {
+  const project = {
+    screenshots: [
+      { src: '/screens/one.webp', alt: 'Project screen one', width: 800, height: 500 },
+      { src: '/screens/two.webp', alt: '', width: 800, height: 500 },
+    ],
+  };
+  assert.equal(countPublicProjectScreenshots(project), 1);
+  project.screenshots[1].alt = 'Project screen two';
+  assert.equal(countPublicProjectScreenshots(project), 2);
 });

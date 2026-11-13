@@ -9,6 +9,9 @@ const allowedFonts = ['editorial', 'modern', 'mono'];
 const allowedThemes = ['graphite-violet', 'midnight', 'ivory-light'];
 const allowedWidths = ['narrow', 'standard', 'wide'];
 const allowedSpacings = ['compact', 'roomy', 'airy'];
+const allowedSkillsLayouts = ['rows', 'two-columns'];
+const allowedProjectsLayouts = ['stacked', 'two-column'];
+const allowedCertificatesLayouts = ['table', 'thumbnails'];
 const databaseDesignKeys = [
   'theme_mode',
   'font_scale',
@@ -22,6 +25,9 @@ const databaseDesignKeys = [
   'hero_variant',
   'font_url',
   'section_visibility',
+  'skills_layout',
+  'projects_layout',
+  'certificates_layout',
 ];
 
 export const sectionVisibilityIds = [
@@ -107,6 +113,15 @@ export function normalizeDatabaseDesign(raw = {}) {
   settings.heroVariant = ['split', 'centered', 'cover'].includes(String(parsed.hero_variant ?? ''))
     ? String(parsed.hero_variant)
     : settings.heroVariant;
+  settings.skillsLayout = allowedSkillsLayouts.includes(String(parsed.skills_layout ?? ''))
+    ? String(parsed.skills_layout)
+    : settings.skillsLayout;
+  settings.projectsLayout = allowedProjectsLayouts.includes(String(parsed.projects_layout ?? ''))
+    ? String(parsed.projects_layout)
+    : settings.projectsLayout;
+  settings.certificatesLayout = allowedCertificatesLayouts.includes(String(parsed.certificates_layout ?? ''))
+    ? String(parsed.certificates_layout)
+    : settings.certificatesLayout;
 
   const background = sanitizeHex(parsed.background_color, '#121116');
   const surface = sanitizeHex(parsed.surface_color, '#1A1920');
@@ -166,7 +181,7 @@ function normalizedDesign(raw) {
 
 function storedTheme() {
   try {
-    const saved = window.localStorage.getItem('jasmine-theme');
+    const saved = window.localStorage.getItem('portfolio-theme');
     return saved === 'light' || saved === 'dark' ? saved : null;
   } catch {
     return null;

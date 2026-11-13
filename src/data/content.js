@@ -1,27 +1,29 @@
 export const content = {
   meta: {
-    siteName: 'Jasmine L. Rotugal',
-    homeTitle: 'Jasmine L. Rotugal — BSIT Student',
-    homeDescription:
-      'Resume portfolio of Jasmine L. Rotugal, a BSIT student at Isabela State University – Cauayan Campus focused on cybersecurity and network security.',
-    certificatesTitle: 'Certificates — Jasmine L. Rotugal',
-    certificatesDescription:
-      'Certificate register for Jasmine L. Rotugal, including type, issuer, date earned, and the source of each record.',
-    notFoundTitle: 'Page not found — Jasmine L. Rotugal',
+    homeTitle: '',
+    homeDescription: '',
+    certificatesTitle: '',
+    certificatesDescription: '',
+    notFoundTitle: '',
     notFoundDescription: 'The requested page does not exist.',
     ogImage: null,
   },
   nav: [
     { label: 'Profile', to: '/#about' },
+    { label: 'Skills', to: '/#skills' },
+    { label: 'Certificates', to: '/certificates' },
+    { label: 'Eligibility', to: '/#eligibility' },
+    { label: 'Experience', to: '/#experience' },
+    { label: 'Projects', to: '/#projects' },
     { label: 'Education', to: '/#education' },
     { label: 'Contact', to: '/#contact' },
   ],
   hero: {
     eyebrow: '',
-    name: 'Jasmine L. Rotugal',
-    title: 'BSIT Student | Aspiring Cybersecurity and Network Security Professional',
-    focus:
-      'BSIT student at Isabela State University – Cauayan Campus, focusing on cybersecurity and network security. I took part in the PacketCapture CTF and solved an OSINT challenge by following clues from an image through public social media posts.',
+    name: '',
+    title: '',
+    brandDetail: '',
+    focus: '',
     whoami: '',
     portrait: {
       src: null,
@@ -88,13 +90,10 @@ export const content = {
     },
   },
   about: {
-    introduction:
-      'I’m a BSIT student at Isabela State University – Cauayan Campus, focusing on cybersecurity and network security. I took part in the PacketCapture CTF and solved an OSINT challenge by following clues from an image through public social media posts. I’m working toward a career in cybersecurity and network security.',
-    careerObjective:
-      'To build a career in cybersecurity and network security by applying my information technology education and continuing to learn.',
-    educationSummary:
-      'Bachelor of Science in Information Technology (BSIT), Isabela State University – Cauayan Campus.',
-    interests: ['Cybersecurity and network security'],
+    introduction: '',
+    careerObjective: '',
+    educationSummary: '',
+    interests: [],
     image: {
       src: null,
       alt: '',
@@ -113,23 +112,15 @@ export const content = {
     work: [],
     internship: [],
     volunteer: [],
-    academic: [
-      {
-        id: 'packet-capture-ctf-osint',
-        role: 'CTF participant',
-        organization: 'PacketCapture CTF',
-        summary:
-          'Solved an OSINT challenge by following clues from an image through public social media posts.',
-      },
-    ],
+    academic: [],
   },
   projects: [],
   education: {
     tertiary: {
       level: 'Tertiary',
-      institution: 'Isabela State University – Cauayan Campus',
-      course: 'Bachelor of Science in Information Technology (BSIT)',
-      yearGraduated: 'Expected 2027',
+      institution: null,
+      course: null,
+      yearGraduated: null,
       achievement: null,
     },
     secondary: {
@@ -155,7 +146,7 @@ export const content = {
     githubLabel: 'GitHub',
     linkedinLabel: 'LinkedIn',
   },
-  resumePath: '/resume/RotugalJasmine.pdf',
+  resumePath: '',
   contactSubject: 'Portfolio enquiry',
   ui: {
     skipToContent: 'Skip to content',
@@ -303,6 +294,7 @@ export const content = {
       invalidEmail: 'Enter a valid email address.',
       tooLong: 'This entry is too long.',
       unavailable: 'Contact information is not currently available.',
+      detailsUnavailable: 'Direct contact details have not been published yet. You can still send a message using the form.',
       hint: 'Share a few details so your message can be reviewed.',
       emailDraft: 'Your email app should open with a draft. Nothing is sent until you press send.',
       openEmailDraft: 'Open email draft',
@@ -319,6 +311,12 @@ export const content = {
     },
     emptyLabel: 'No published records',
     noMatchLabel: 'No match',
+    emptySite: {
+      label: 'Portfolio',
+      title: 'This portfolio is being prepared.',
+      detail:
+        'Professional background, credentials, and project work will appear here once they are published.',
+    },
     viewAllCertificates: 'View all certificates',
     viewAllSkills: 'View all skills',
     viewAllAchievements: 'View all achievements',
@@ -331,7 +329,6 @@ export const content = {
     footerNavigation: 'Footer navigation',
     professionalLinks: 'Professional links',
     opensNewTab: 'opens in a new tab',
-    brandDetail: 'BSIT · ISU Cauayan',
     filterEmptyDetail: 'Adjust the search text or choose a different type.',
   },
 };
@@ -592,7 +589,7 @@ export const sampleContent = import.meta.env?.DEV
   },
   contact: {
     ...content.contact,
-    email: 'jasmine.rotugal@example.com',
+    email: 'portfolio.owner@example.com',
     github: 'https://example.com/sample-github',
     linkedin: 'https://example.com/sample-linkedin',
     sample: true,

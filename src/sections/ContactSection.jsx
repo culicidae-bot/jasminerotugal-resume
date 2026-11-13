@@ -196,6 +196,9 @@ export default function ContactSection() {
         <div className="contact-grid">
           <div className="contact-details">
             <p className="contact-invitation">{content.ui.contactInvitation}</p>
+            {!hasContactDetails && formAvailable ? (
+              <p className="contact-empty">{labels.detailsUnavailable}</p>
+            ) : null}
             {hasContactDetails ? (
               <dl className="contact-list">
                 {contactEmail ? (

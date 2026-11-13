@@ -5,9 +5,9 @@ import {
   selectResume,
   sortByPriority,
 } from './prioritize.js';
+import { isPublicEligibility } from './public-sections.js';
 
 export const RESUME_PUBLIC_URL_PATH = 'portfolio/resume.pdf';
-export const STATIC_RESUME_PATH = '/resume/RotugalJasmine.pdf';
 
 const ACHIEVEMENT_TYPES = ['Achievement', 'Award'];
 const SKILL_CATEGORY_ORDER = [
@@ -211,7 +211,9 @@ export function planResumeSections(content, { origin = defaultOrigin() } = {}) {
   if (achievements.length) sections.push({ id: 'achievements', title: 'Achievements', entries: achievements });
 
   const eligibility = recordEntries(
-    (Array.isArray(content.eligibility) ? content.eligibility : []).filter(isResumeSelected),
+    (Array.isArray(content.eligibility) ? content.eligibility : [])
+      .filter(isPublicEligibility)
+      .filter(isResumeSelected),
     { title: 'title', dateKey: 'dateConferred' },
   );
   if (eligibility.length) sections.push({ id: 'eligibility', title: 'Eligibility and certifications', entries: eligibility });
@@ -291,7 +293,7 @@ export async function buildResumePdf(content, options = {}) {
   pdf.setTitle(`${clean(content?.hero?.name, 120) || 'Resume'} — Resume`);
   pdf.setAuthor(clean(content?.hero?.name, 120) || 'Portfolio owner');
   pdf.setSubject('Resume');
-  pdf.setProducer('jasmine-portfolio');
+  pdf.setProducer('portfolio');
 
   const regular = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);

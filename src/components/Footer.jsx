@@ -10,14 +10,17 @@ export default function Footer() {
   const github = isSafeHttpUrl(content.contact.github) ? content.contact.github : null;
   const linkedin = isSafeHttpUrl(content.contact.linkedin) ? content.contact.linkedin : null;
   const hasProfessionalLinks = Boolean(email || github || linkedin);
+  const hasBrand = Boolean(content.hero.name || content.hero.title);
 
   return (
     <footer className="site-footer">
-      <div className={`footer-inner${hasProfessionalLinks ? '' : ' footer-inner-simple'}`}>
-        <div className="footer-brand">
-          <p className="footer-name">{content.hero.name}</p>
-          <p className="footer-title">{content.hero.title}</p>
-        </div>
+      <div className={`footer-inner${hasProfessionalLinks || hasBrand ? '' : ' footer-inner-simple'}`}>
+        {hasBrand ? (
+          <div className="footer-brand">
+            <p className="footer-name">{content.hero.name}</p>
+            <p className="footer-title">{content.hero.title}</p>
+          </div>
+        ) : null}
         <nav className="footer-nav" aria-label={content.ui.footerNavigation}>
           {content.nav.filter((item) => isPublicNavigationItem(item, content)).map((item) => (
             <Link key={item.label} to={item.to}>

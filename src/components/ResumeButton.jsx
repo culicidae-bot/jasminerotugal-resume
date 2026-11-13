@@ -1,8 +1,11 @@
 import { useEffect, useId, useState } from 'react';
 import { useSite } from '../lib/site-context.js';
-import { isSafeImagePath } from '../lib/urls.js';
+import { resolvePortfolioAssetUrl } from '../lib/portfolio-content.js';
+import { isSafeHttpUrl, isSafeImagePath } from '../lib/urls.js';
 
-const STATIC_RESUME_PATH = '/resume/RotugalJasmine.pdf';
+function usableResumeUrl(value) {
+  return isSafeImagePath(value) || isSafeHttpUrl(value);
+}
 
 export default function ResumeButton() {
   const { content } = useSite();
@@ -12,9 +15,6 @@ export default function ResumeButton() {
   useEffect(() => {
     const controller = new AbortController();
     let active = true;
-    const candidate = isSafeImagePath(content.resumePath)
-      ? content.resumePath
-      : STATIC_RESUME_PATH;
 
     async function isAvailable(path) {
       try {
@@ -31,18 +31,20 @@ export default function ResumeButton() {
     }
 
     setResume({ state: 'checking', path: '' });
-    isAvailable(candidate).then(async (available) => {
-      if (!active) return;
-      if (available) {
-        setResume({ state: 'available', path: candidate });
-        return;
-      }
-      if (candidate !== STATIC_RESUME_PATH && (await isAvailable(STATIC_RESUME_PATH))) {
-        if (active) setResume({ state: 'available', path: STATIC_RESUME_PATH });
-        return;
-      }
-      if (active) setResume({ state: 'missing', path: '' });
-    });
+    Promise.resolve()
+      .then(() => resolvePortfolioAssetUrl(content.resumePath))
+      .then((resolved) => (usableResumeUrl(resolved) ? resolved : ''))
+      .then(async (candidate) => {
+        if (!active) return;
+        if (candidate && (await isAvailable(candidate))) {
+          if (active) setResume({ state: 'available', path: candidate });
+          return;
+        }
+        if (active) setResume({ state: 'missing', path: '' });
+      })
+      .catch(() => {
+        if (active) setResume({ state: 'missing', path: '' });
+      });
 
     return () => {
       active = false;
@@ -56,7 +58,7 @@ export default function ResumeButton() {
         <a
           className="button button-primary"
           href={resume.path}
-          download="RotugalJasmine.pdf"
+          download="resume.pdf"
         >
           {content.ui.downloadResume}
         </a>

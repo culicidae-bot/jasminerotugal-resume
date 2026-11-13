@@ -22,10 +22,12 @@ export default function AboutSection({ index }) {
           {content.about.introduction ? (
             <p className="lead">{content.about.introduction}</p>
           ) : null}
-          <div className="text-block">
-            <h3>{labels.careerObjective}</h3>
-            <p>{content.about.careerObjective}</p>
-          </div>
+          {content.about.careerObjective ? (
+            <div className="text-block">
+              <h3>{labels.careerObjective}</h3>
+              <p>{content.about.careerObjective}</p>
+            </div>
+          ) : null}
           {content.about.educationSummary ? (
             <div className="text-block">
               <h3>{labels.educationBackground}</h3>
@@ -34,14 +36,16 @@ export default function AboutSection({ index }) {
               </p>
             </div>
           ) : null}
-          <div className="text-block">
-            <h3>{labels.interests}</h3>
-            <ul className="hairline-list">
-              {content.about.interests.map((interest) => (
-                <li key={interest}>{interest}</li>
-              ))}
-            </ul>
-          </div>
+          {content.about.interests?.length ? (
+            <div className="text-block">
+              <h3>{labels.interests}</h3>
+              <ul className="hairline-list">
+                {content.about.interests.map((interest) => (
+                  <li key={interest}>{interest}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           {hasProfiles ? (
             <nav className="about-links" aria-label={content.ui.professionalLinks}>
               {email ? <a href={`mailto:${email}`}>{content.ui.contactLabels.email}: {email}</a> : null}
