@@ -1,6 +1,4 @@
-import { Link } from 'react-router-dom';
 import { useSite } from '../lib/site-context.js';
-import { isPublicNavigationItem } from '../lib/public-sections.js';
 import { isSafeHttpUrl, mailtoSafeAddress } from '../lib/urls.js';
 import { ExternalIcon } from './Icons.jsx';
 
@@ -14,23 +12,15 @@ export default function Footer() {
 
   return (
     <footer className="site-footer">
-      <div className={`footer-inner${hasProfessionalLinks || hasBrand ? '' : ' footer-inner-simple'}`}>
+      <div className="footer-inner footer-inner-minimal">
         {hasBrand ? (
           <div className="footer-brand">
             <p className="footer-name">{content.hero.name}</p>
             <p className="footer-title">{content.hero.title}</p>
           </div>
         ) : null}
-        <nav className="footer-nav" aria-label={content.ui.footerNavigation}>
-          {content.nav.filter((item) => isPublicNavigationItem(item, content)).map((item) => (
-            <Link key={item.label} to={item.to}>
-              {item.label}
-            </Link>
-          ))}
-          <a href="#top">{content.ui.backToTop}</a>
-        </nav>
         {hasProfessionalLinks ? (
-          <nav className="footer-links" aria-label={content.ui.professionalLinks}>
+          <div className="footer-links">
             {email ? <a href={`mailto:${email}`}>{email}</a> : null}
             {github ? (
               <a href={github} target="_blank" rel="noopener noreferrer">
@@ -46,8 +36,9 @@ export default function Footer() {
                 <span className="visually-hidden"> ({content.ui.opensNewTab})</span>
               </a>
             ) : null}
-          </nav>
+          </div>
         ) : null}
+        <a className="footer-back-to-top" href="#top">{content.ui.backToTop}</a>
       </div>
     </footer>
   );
