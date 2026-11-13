@@ -196,6 +196,14 @@ test('saved profile and null education values load into the admin form', () => {
   assert.equal(merged.education.secondary.institution, 'Secondary School');
 });
 
+test('older published content retains the verified academic activity from the base profile', () => {
+  const merged = mergePublishedPortfolioContent(content, {
+    experience: { work: [], internship: [], volunteer: [] },
+  });
+
+  assert.deepEqual(merged.experience.academic, content.experience.academic);
+});
+
 test('invalid saved portfolio content fails closed instead of loading fallback content', async () => {
   const client = createStorageClient([
     { key: 'portfolio_content_draft', value: '{invalid', published: false },

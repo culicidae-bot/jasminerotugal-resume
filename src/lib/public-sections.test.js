@@ -1,12 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { hasPublicSectionContent, isPublicNavigationItem } from './public-sections.js';
+import {
+  getSkillProficiency,
+  hasPublicSectionContent,
+  isPublicNavigationItem,
+} from './public-sections.js';
 
 const emptyContent = {
   skills: [],
   certificates: [],
   eligibility: [],
-  experience: { work: [], internship: [], volunteer: [] },
+  experience: { work: [], internship: [], volunteer: [], academic: [] },
   projects: [],
   education: { tertiary: {}, secondary: {}, elementary: {} },
   securityFocus: { profiles: [], writeups: [] },
@@ -18,6 +22,30 @@ test('only verified, substantive sections are available for public navigation', 
   assert.equal(hasPublicSectionContent('skills', emptyContent), false);
   assert.equal(isPublicNavigationItem({ to: '/#projects' }, emptyContent), false);
   assert.equal(isPublicNavigationItem({ to: '/certificates' }, emptyContent), false);
+});
+
+test('relevant academic activities can be published without inventing employment', () => {
+  const academicActivity = {
+    role: 'CTF participant',
+    organization: 'PacketCapture CTF',
+    summary: 'Solved an OSINT challenge by following clues from an image through public social media posts.',
+  };
+  const content = {
+    ...emptyContent,
+    experience: { ...emptyContent.experience, academic: [academicActivity] },
+  };
+
+  assert.equal(hasPublicSectionContent('experience', content), true);
+  assert.equal(hasPublicSectionContent('experience', emptyContent), false);
+});
+
+test('skill proficiency remains absent unless a valid value was supplied', () => {
+  assert.equal(getSkillProficiency(undefined), null);
+  assert.equal(getSkillProficiency(null), null);
+  assert.equal(getSkillProficiency(''), null);
+  assert.equal(getSkillProficiency('not a number'), null);
+  assert.equal(getSkillProficiency(0), 0);
+  assert.equal(getSkillProficiency(135), 100);
 });
 
 test('project section requires two real, safe screenshots', () => {

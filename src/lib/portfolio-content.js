@@ -14,6 +14,7 @@ const DESIGN_KEYS = [
   'text_color',
   'hero_variant',
   'font_url',
+  'section_visibility',
 ];
 const ORIGINALS_BUCKET = 'originals';
 const PUBLIC_MEDIA_BUCKET = 'public-media';
@@ -39,6 +40,7 @@ const PUBLIC_CONTENT_KEYS = [
   'about',
   'skills',
   'certificateTypes',
+  'achievementTypes',
   'certificates',
   'eligibility',
   'experience',
@@ -493,7 +495,7 @@ export async function loadPortfolioDraftWithClient(client) {
 
   const { data, error } = await client
     .from('site_settings')
-    .select('key, value, published')
+    .select('key, value, published, updated_at')
     .in('key', [CONTENT_KEY, DRAFT_KEY]);
 
   if (error) throw error;
@@ -501,6 +503,11 @@ export async function loadPortfolioDraftWithClient(client) {
   const row = rows.find((item) => item.key === DRAFT_KEY) || rows.find((item) => item.key === CONTENT_KEY);
   if (!row || typeof row.value !== 'string') return { content: null, published: false };
   const published = Boolean(rows.find((item) => item.key === CONTENT_KEY)?.published);
+  const updatedAt = rows
+    .map((item) => (typeof item.updated_at === 'string' ? item.updated_at : null))
+    .filter(Boolean)
+    .sort()
+    .pop() || null;
   const cleanupNeeded =
     !published &&
     collectPublicAssetPaths(rows.filter((item) => item.key === CONTENT_KEY || item.key === DRAFT_KEY)).size > 0;
@@ -515,7 +522,7 @@ export async function loadPortfolioDraftWithClient(client) {
     throw new Error('Saved portfolio content has an invalid format. Restore a valid backup before editing.');
   }
 
-  return { content, published, cleanupNeeded };
+  return { content, published, cleanupNeeded, updatedAt };
 }
 
 export async function loadPortfolioDraft() {
@@ -747,7 +754,10 @@ export async function savePortfolioDesignWithClient(client, settings) {
 
     const rows = DESIGN_KEYS.map((key) => ({
       key,
-      value: String(publishedSettings[key] ?? ''),
+      value:
+        publishedSettings[key] && typeof publishedSettings[key] === 'object'
+          ? JSON.stringify(publishedSettings[key])
+          : String(publishedSettings[key] ?? ''),
       published: true,
     }));
     const { error } = await client.from('site_settings').upsert(rows, { onConflict: 'key' });

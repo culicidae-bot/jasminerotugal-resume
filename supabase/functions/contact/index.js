@@ -18,7 +18,7 @@ const response = (origin, allowedOrigin, ok, status, message) =>
   });
 
 const successResponse = (origin, allowedOrigin) =>
-  response(origin, allowedOrigin, true, 200, 'Your message was sent');
+  response(origin, allowedOrigin, true, 200, 'Your message was received');
 const errorResponse = (origin, allowedOrigin, status) =>
   response(origin, allowedOrigin, false, status, 'Unable to send your message. Please try again later.');
 

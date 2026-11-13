@@ -1,1 +1,24 @@
-*.pdf binary
+# Text files are stored and checked out as LF.
+* text=auto eol=lf
+
+# SVG is XML text — keep it LF like other text files.
+*.svg   text eol=lf
+
+# Binary assets — never normalize or diff as text.
+*.pdf   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.webp  binary
+*.gif   binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.eot   binary
+*.zip   binary
+*.gz    binary
+*.tar   binary
+*.7z    binary
+*.mp4   binary
+*.webm  binary

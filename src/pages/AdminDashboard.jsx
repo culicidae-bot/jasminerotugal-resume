@@ -2,7 +2,7 @@ import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { designSettings as defaultDesign, presets } from '../data/design.js';
 import { useSite } from '../lib/site-context.js';
 import '../admin.css';
-import { applyDesignTokens, normalizeDatabaseDesign } from '../lib/design-settings.js';
+import { applyDesignTokens, normalizeDatabaseDesign, sectionVisibilityIds } from '../lib/design-settings.js';
 import {
   applyRecordEdit,
   beginRecordEdit,
@@ -21,28 +21,73 @@ import {
   unpublishPortfolioContent,
   uploadPortfolioAsset,
 } from '../lib/portfolio-content.js';
+import { getSupabaseClient } from '../lib/supabase.js';
 
-const tabs = [
-  ['profile', 'Profile'],
-  ['skills', 'Skills'],
-  ['certificates', 'Certificates'],
-  ['eligibility', 'Eligibility'],
-  ['experience', 'Experience'],
-  ['education', 'Education'],
-  ['projects', 'Projects'],
-  ['design', 'Design'],
+const ACHIEVEMENT_TYPES = ['Achievement', 'Award'];
+const SKILL_CATEGORY_OPTIONS = [
+  'Technical',
+  'Networking',
+  'Cybersecurity',
+  'Programming & Development',
+  'Professional',
 ];
+
+const navGroups = [
+  {
+    label: 'Overview',
+    items: [['overview', 'Overview']],
+  },
+  {
+    label: 'Content',
+    items: [
+      ['profile', 'Profile'],
+      ['skills', 'Skills'],
+      ['certificates', 'Certificates'],
+      ['achievements', 'Achievements'],
+      ['eligibility', 'Eligibility'],
+      ['experience', 'Experience'],
+      ['education', 'Education'],
+      ['projects', 'Projects'],
+    ],
+  },
+  {
+    label: 'Site',
+    items: [
+      ['design', 'Design'],
+      ['settings', 'Website settings'],
+    ],
+  },
+];
+
+const sectionVisibilityLabels = {
+  hero: 'Hero / profile banner',
+  about: 'About me',
+  skills: 'Skills',
+  certificates: 'Certificates',
+  eligibility: 'Eligibility',
+  experience: 'Experience',
+  projects: 'Projects',
+  education: 'Education',
+  security: 'Security practice',
+  contact: 'Contact',
+};
 
 const listFields = {
   skills: [
-    { key: 'category', label: 'Category (for example, technical or professional)' },
+    { key: 'category', label: 'Category', options: SKILL_CATEGORY_OPTIONS },
     { key: 'name', label: 'Skill name' },
     { key: 'proficiency', label: 'Proficiency (0–100)', type: 'number' },
     { key: 'label', label: 'Proficiency label' },
   ],
   certificates: [
     { key: 'title', label: 'Certificate title' },
-    { key: 'type', label: 'Type (certification, training, workshop, seminar, award)' },
+    { key: 'type', label: 'Type (certification, training, workshop, seminar)', options: ['IT Certification', 'Training', 'Workshop', 'Seminar', 'Certification'] },
+    { key: 'issuer', label: 'Issuing organization' },
+    { key: 'dateEarned', label: 'Date earned', type: 'date' },
+    { key: 'verifyUrl', label: 'Verification URL' },
+  ],
+  achievements: [
+    { key: 'title', label: 'Achievement title' },
     { key: 'issuer', label: 'Issuing organization' },
     { key: 'dateEarned', label: 'Date earned', type: 'date' },
     { key: 'verifyUrl', label: 'Verification URL' },
@@ -56,6 +101,7 @@ const listFields = {
     { key: 'role', label: 'Position / role' },
     { key: 'organization', label: 'Organization' },
     { key: 'period', label: 'Duration / period' },
+    { key: 'summary', label: 'Summary' },
     { key: 'responsibilities', label: 'Responsibilities (one per line)', type: 'lines' },
     { key: 'accomplishments', label: 'Accomplishments (one per line)', type: 'lines' },
   ],
@@ -69,8 +115,12 @@ const listFields = {
     { key: 'contributions', label: 'Your contributions (one per line)', type: 'lines' },
     { key: 'projectUrl', label: 'Live project URL' },
     { key: 'sourceUrl', label: 'Source code URL' },
+    { key: 'featured', label: 'Feature this project on the public site', type: 'boolean' },
   ],
 };
+
+const CERTIFICATE_FILTER = (record) => !ACHIEVEMENT_TYPES.includes(record?.type);
+const ACHIEVEMENT_FILTER = (record) => ACHIEVEMENT_TYPES.includes(record?.type);
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -87,6 +137,19 @@ function updatePath(value, path, nextValue) {
   for (const key of keys.slice(0, -1)) cursor = cursor[key];
   cursor[keys[keys.length - 1]] = nextValue;
   return result;
+}
+
+function formatTimestamp(value) {
+  if (!value) return 'Not recorded yet';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Not recorded yet';
+  return date.toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 function useAssetPreviewUrl(src) {
@@ -127,9 +190,10 @@ function DraftAssetImage({ src, alt, className }) {
   return <img className={className} src={url} alt={alt} />;
 }
 
-function TextField({ label, value, onChange, multiline = false, type = 'text', hint }) {
+function TextField({ label, value, onChange, multiline = false, type = 'text', hint, options }) {
   const generatedId = useId();
   const id = `admin-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${generatedId}`;
+  const listId = options ? `${id}-options` : undefined;
   const Control = multiline ? 'textarea' : 'input';
   return (
     <div className="admin-field">
@@ -138,9 +202,34 @@ function TextField({ label, value, onChange, multiline = false, type = 'text', h
         id={id}
         type={multiline ? undefined : type}
         value={value ?? ''}
+        list={listId}
         onChange={(event) => onChange(event.target.value)}
         rows={multiline ? 4 : undefined}
       />
+      {options ? (
+        <datalist id={listId}>
+          {options.map((option) => <option key={option} value={option} />)}
+        </datalist>
+      ) : null}
+      {hint ? <small>{hint}</small> : null}
+    </div>
+  );
+}
+
+function CheckboxField({ label, checked, onChange, hint }) {
+  const generatedId = useId();
+  const id = `admin-checkbox-${generatedId}`;
+  return (
+    <div className="admin-field admin-checkbox-field">
+      <label htmlFor={id} className="admin-checkbox-label">
+        <input
+          id={id}
+          type="checkbox"
+          checked={Boolean(checked)}
+          onChange={(event) => onChange(event.target.checked)}
+        />
+        <span>{label}</span>
+      </label>
       {hint ? <small>{hint}</small> : null}
     </div>
   );
@@ -156,15 +245,24 @@ function RecordListEditor({
   allowScreenshots = false,
   allowCertificateFile = false,
   onEditingChange = () => {},
+  recordFilter = null,
+  fixedType = '',
+  addLabel = '',
+  emptyTitle = 'No entries yet. Add one when you are ready.',
 }) {
-  const records = readPath(draft, path) || [];
+  const allRecords = readPath(draft, path) || [];
+  const entries = allRecords
+    .map((record, index) => ({ record, index }))
+    .filter((entry) => (recordFilter ? recordFilter(entry.record) : true));
   const [editing, setEditing] = useState(null);
 
   function addRecord() {
     const record = { id: crypto.randomUUID() };
-    for (const field of fields) record[field.key] = field.type === 'lines' ? [] : '';
+    for (const field of fields) record[field.key] = field.type === 'lines' ? [] : field.type === 'boolean' ? false : '';
+    if (fixedType) record.type = fixedType;
+    else if (allowCertificateFile) record.type = '';
     if (allowScreenshots) record.screenshots = [];
-    setEditing({ key: `new:${record.id}`, index: records.length, original: null, value: record });
+    setEditing({ key: `new:${record.id}`, index: allRecords.length, original: null, value: record });
     onEditingChange(path, true);
   }
 
@@ -185,7 +283,7 @@ function RecordListEditor({
 
   function commitEdit() {
     try {
-      const nextRecords = applyRecordEdit(records, editing);
+      const nextRecords = applyRecordEdit(allRecords, editing);
       onChange((current) => updatePath(current, path, nextRecords));
       setEditing(null);
       onEditingChange(path, false);
@@ -261,6 +359,16 @@ function RecordListEditor({
         <div className="admin-form-grid">
           {fields.map((field) => {
             const fieldValue = value[field.key];
+            if (field.type === 'boolean') {
+              return (
+                <CheckboxField
+                  key={field.key}
+                  label={field.label}
+                  checked={Boolean(fieldValue)}
+                  onChange={(nextValue) => updateField(field.key, nextValue)}
+                />
+              );
+            }
             const shownValue = field.type === 'lines' ? (Array.isArray(fieldValue) ? fieldValue.join('\n') : '') : fieldValue;
             return (
               <TextField
@@ -269,6 +377,7 @@ function RecordListEditor({
                 type={field.type === 'number' || field.type === 'date' ? field.type : 'text'}
                 multiline={field.type === 'lines' || field.key === 'summary' || field.key === 'purpose'}
                 value={shownValue}
+                options={field.options}
                 onChange={(nextValue) => {
                   const parsedValue = field.type === 'lines'
                     ? nextValue.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)
@@ -352,18 +461,18 @@ function RecordListEditor({
           <p>Unpublished records stay hidden from recruiters.</p>
         </div>
         <button className="admin-button" type="button" disabled={Boolean(editing)} onClick={addRecord}>
-          Add {title.toLowerCase()}
+          {addLabel || `Add ${title.toLowerCase()}`}
         </button>
       </div>
-      {records.length === 0 && !editing ? <p className="admin-empty">No entries yet. Add one when you are ready.</p> : null}
+      {entries.length === 0 && !editing ? <p className="admin-empty">{emptyTitle}</p> : null}
       <div className="record-list">
-        {records.map((record, index) => {
+        {entries.map(({ record, index }) => {
           const key = record.id ? `id:${record.id}` : `index:${index}`;
           const isEditing = editing?.key === key;
           const value = isEditing ? editing.value : record;
           return (
             <fieldset className="record-card" key={key}>
-              <legend>{value.title || `${title} ${index + 1}`}</legend>
+              <legend>{value.title || value.name || value.role || `${title} ${index + 1}`}{value.featured ? ' ★' : ''}</legend>
               {isEditing ? (
                 renderEditForm(value, key)
               ) : (
@@ -371,7 +480,9 @@ function RecordListEditor({
                   <dl className="admin-record-summary">
                     {fields.map((field) => {
                       const fieldValue = record[field.key];
-                      const textValue = Array.isArray(fieldValue) ? fieldValue.join(', ') : fieldValue;
+                      const textValue = typeof fieldValue === 'boolean'
+                        ? (fieldValue ? 'Yes' : '')
+                        : Array.isArray(fieldValue) ? fieldValue.join(', ') : fieldValue;
                       return textValue ? (
                         <div key={field.key}>
                           <dt>{field.label}</dt>
@@ -392,12 +503,22 @@ function RecordListEditor({
         })}
         {editing && !editing.original ? (
           <fieldset className="record-card" key={editing.key}>
-            <legend>{editing.value.title || `${title} ${records.length + 1}`}</legend>
+            <legend>{editing.value.title || editing.value.name || `${title} ${allRecords.length + 1}`}</legend>
             {renderEditForm(editing.value, editing.key)}
           </fieldset>
         ) : null}
       </div>
     </section>
+  );
+}
+
+function OverviewStat({ label, value, detail }) {
+  return (
+    <div className="admin-stat-card">
+      <p className="admin-stat-value">{value}</p>
+      <p className="admin-stat-label">{label}</p>
+      {detail ? <p className="admin-stat-detail">{detail}</p> : null}
+    </div>
   );
 }
 
@@ -415,26 +536,62 @@ export default function AdminDashboard({ onLogout }) {
     section_spacing: design.sectionSpacing || defaultDesign.sectionSpacing,
     section_padding: design.padding || 88,
     hero_variant: design.heroVariant || defaultDesign.heroVariant,
-    background_color: design.palette?.background || presets[design.activePreset]?.colors.bg || '#121116',
-    surface_color: design.palette?.surface || presets[design.activePreset]?.colors.surface || '#1A1920',
-    primary_color: design.palette?.primary || presets[design.activePreset]?.colors.primary || '#6D3FD8',
-    text_color: design.palette?.text || presets[design.activePreset]?.colors.text || '#ECEAF2',
+    background_color: design.palette?.background || presets[design.activePreset]?.colors.bg || '#0B1120',
+    surface_color: design.palette?.surface || presets[design.activePreset]?.colors.surface || '#121A2E',
+    primary_color: design.palette?.primary || presets[design.activePreset]?.colors.primary || '#7C5CE0',
+    text_color: design.palette?.text || presets[design.activePreset]?.colors.text || '#E6EAF4',
     font_url: design.fontUrl || '',
+    section_visibility: { ...defaultDesign.sectionVisibility, ...(design.sectionVisibility || {}) },
   }));
-  const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useState('overview');
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
   const [loadState, setLoadState] = useState('loading');
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [isPublished, setIsPublished] = useState(false);
+  const [contentUpdatedAt, setContentUpdatedAt] = useState(null);
   const [needsAssetCleanup, setNeedsAssetCleanup] = useState(false);
   const [cleanupPaths, setCleanupPaths] = useState([]);
 
-  const preset = useMemo(() => presets[designDraft.theme_mode] || presets['graphite-violet'], [designDraft.theme_mode]);
+  const preset = useMemo(() => presets[designDraft.theme_mode] || presets['midnight'], [designDraft.theme_mode]);
   const hasUncommittedRecordEdit = Object.values(openRecordEditors).some(Boolean);
   const reportRecordEditing = useCallback((path, isOpen) => {
     setOpenRecordEditors((current) => ({ ...current, [path]: isOpen }));
   }, []);
+
+  const stats = useMemo(() => {
+    const certificates = (draft.certificates || []).filter(CERTIFICATE_FILTER);
+    const achievements = (draft.certificates || []).filter(ACHIEVEMENT_FILTER);
+    const educationEntries = ['tertiary', 'secondary', 'elementary']
+      .filter((level) => {
+        const entry = draft.education?.[level];
+        return Boolean(entry && (entry.institution || entry.course || entry.yearGraduated || entry.achievement));
+      }).length;
+    const experienceEntries = ['work', 'internship', 'volunteer', 'academic']
+      .reduce((total, group) => total + ((draft.experience?.[group] || []).length), 0);
+    return {
+      projects: (draft.projects || []).length,
+      certificates: certificates.length,
+      achievements: achievements.length,
+      skills: (draft.skills || []).length,
+      education: educationEntries,
+      experience: experienceEntries,
+    };
+  }, [draft]);
+
+  const readiness = useMemo(() => {
+    const projects = draft.projects || [];
+    const projectsReady = projects.length > 0 && projects.every(
+      (project) => Array.isArray(project.screenshots) && project.screenshots.length >= 2,
+    );
+    return [
+      { label: 'Professional photo uploaded', done: Boolean(draft.hero?.portrait?.src), tab: 'settings' },
+      { label: 'Resume PDF uploaded', done: Boolean(draft.resumePath), tab: 'settings' },
+      { label: 'Professional email set', done: Boolean(draft.contact?.email), tab: 'settings' },
+      { label: 'At least one skill listed', done: (draft.skills || []).length > 0, tab: 'skills' },
+      { label: 'Every project has at least 2 screenshots', done: projectsReady, tab: 'projects' },
+    ];
+  }, [draft]);
 
   useEffect(() => {
     let active = true;
@@ -442,17 +599,18 @@ export default function AdminDashboard({ onLogout }) {
       setLoadState('loading');
       setStatus('');
       try {
-        const { content: saved, published, cleanupNeeded } = await loadPortfolioDraft();
+        const { content: saved, published, cleanupNeeded, updatedAt } = await loadPortfolioDraft();
         if (!active) return;
         const loadedDraft = saved ? mergePublishedPortfolioContent(content, saved) : clone(content);
         setDraft(loadedDraft);
         setSavedDraft(clone(loadedDraft));
         setIsPublished(published);
+        setContentUpdatedAt(updatedAt || null);
         setNeedsAssetCleanup(Boolean(cleanupNeeded));
         setLoadState('ready');
 
         try {
-          const pendingCleanupPaths = await loadPendingPublicAssetCleanupWithClient();
+          const pendingCleanupPaths = await loadPendingPublicAssetCleanupWithClient(getSupabaseClient());
           if (!active) return;
           setCleanupPaths(pendingCleanupPaths);
           setNeedsAssetCleanup(Boolean(cleanupNeeded) || pendingCleanupPaths.length > 0);
@@ -501,6 +659,7 @@ export default function AdminDashboard({ onLogout }) {
     try {
       await savePortfolioDraft(draft);
       setSavedDraft(clone(draft));
+      setContentUpdatedAt(new Date().toISOString());
       setStatus(
         isPublished
           ? 'Draft saved. Your current published portfolio remains visible until you publish or unpublish.'
@@ -534,6 +693,7 @@ export default function AdminDashboard({ onLogout }) {
         await publishPortfolioContent(draft);
       setSavedDraft(clone(draft));
       setIsPublished(true);
+      setContentUpdatedAt(new Date().toISOString());
       onPublishedContentChange(publishedContent);
       setCleanupPaths(cleanupCandidates);
       setNeedsAssetCleanup(cleanupCandidates.length > 0);
@@ -558,6 +718,7 @@ export default function AdminDashboard({ onLogout }) {
       if (privateDraft) setDraft(privateDraft);
       if (privateDraft) setSavedDraft(clone(privateDraft));
       setIsPublished(false);
+      setContentUpdatedAt(new Date().toISOString());
       setCleanupPaths(cleanupCandidates);
       setNeedsAssetCleanup(Boolean(cleanupError) || cleanupCandidates.length > 0);
       onPublishedContentChange(null);
@@ -672,6 +833,13 @@ export default function AdminDashboard({ onLogout }) {
     }));
   }
 
+  function toggleSectionVisibility(id, visible) {
+    setDesignDraft((current) => ({
+      ...current,
+      section_visibility: { ...defaultDesign.sectionVisibility, ...(current.section_visibility || {}), [id]: visible },
+    }));
+  }
+
   function discardContentEdits() {
     setDraft(clone(savedDraft));
     setEditRevision((current) => current + 1);
@@ -679,81 +847,169 @@ export default function AdminDashboard({ onLogout }) {
     setStatus('Unsaved portfolio edits were discarded.');
   }
 
-  return (
-    <main className="admin-dashboard">
-      <header className="admin-dashboard-header">
-        <div>
-          <p className="admin-kicker">Private area</p>
-          <h1>Portfolio editor</h1>
-          <p>Manage the information and public design shown to recruiters.</p>
-        </div>
-        <button className="admin-button" type="button" onClick={onLogout}>Log out of all devices</button>
-      </header>
+  const badgeCounts = {
+    skills: stats.skills,
+    certificates: stats.certificates,
+    achievements: stats.achievements,
+    eligibility: (draft.eligibility || []).length,
+    experience: stats.experience,
+    projects: stats.projects,
+  };
 
-      {loadState !== 'ready' ? (
-        <section className="editor-section" aria-labelledby="admin-load-title">
-          <h2 id="admin-load-title">
-            {loadState === 'loading' ? 'Loading saved portfolio' : 'Could not load saved portfolio'}
-          </h2>
-          <p role="status" aria-live="polite">
-            {loadState === 'loading'
-              ? 'Your saved content is loading. Editing and publishing are paused until it is ready.'
-              : status}
-          </p>
-          {loadState === 'error' ? (
-            <button
-              className="admin-button admin-button-primary"
-              type="button"
-              onClick={() => setLoadAttempt((current) => current + 1)}
-            >
-              Retry loading
-            </button>
-          ) : null}
+  return (
+    <main className="admin-dashboard admin-shell">
+      <aside className="admin-sidebar">
+        <div className="admin-sidebar-brand">
+          <p className="admin-kicker">Private area</p>
+          <p className="admin-sidebar-title">Portfolio admin</p>
+          <p className="admin-sidebar-subtitle">Content manager</p>
+        </div>
+        <nav className="admin-sidebar-nav" aria-label="Admin sections">
+          {navGroups.map((group) => (
+            <div className="admin-sidebar-group" key={group.label}>
+              <p className="admin-sidebar-group-label">{group.label}</p>
+              {group.items.map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  className={activeTab === id ? 'admin-side-link is-active' : 'admin-side-link'}
+                  aria-current={activeTab === id ? 'page' : undefined}
+                  onClick={() => setActiveTab(id)}
+                >
+                  <span>{label}</span>
+                  {badgeCounts[id] ? <span className="admin-side-badge">{badgeCounts[id]}</span> : null}
+                </button>
+              ))}
+            </div>
+          ))}
+        </nav>
+        <div className="admin-sidebar-foot">
+          <div className={`admin-publish-state${isPublished ? ' is-published' : ''}`}>
+            <span className="admin-publish-dot" aria-hidden="true" />
+            {isPublished ? 'Published' : 'Draft only'}
+          </div>
+          <a className="admin-side-link admin-side-link-subtle" href="/preview" target="_blank" rel="noopener noreferrer">Preview draft ↗</a>
+          <a className="admin-side-link admin-side-link-subtle" href="/" target="_blank" rel="noopener noreferrer">View public site ↗</a>
+          <button className="admin-button admin-button-block" type="button" onClick={onLogout}>Log out</button>
+        </div>
+      </aside>
+
+      <div className="admin-main">
+        {loadState !== 'ready' ? (
+          <section className="editor-section" aria-labelledby="admin-load-title">
+            <h2 id="admin-load-title">
+              {loadState === 'loading' ? 'Loading saved portfolio' : 'Could not load saved portfolio'}
+            </h2>
+            <p role="status" aria-live="polite">
+              {loadState === 'loading'
+                ? 'Your saved content is loading. Editing and publishing are paused until it is ready.'
+                : status}
+            </p>
+            {loadState === 'error' ? (
+              <button
+                className="admin-button admin-button-primary"
+                type="button"
+                onClick={() => setLoadAttempt((current) => current + 1)}
+              >
+                Retry loading
+              </button>
+            ) : null}
+          </section>
+        ) : (
+          <>
+      {activeTab === 'overview' ? (
+        <section className="editor-section">
+          <div className="editor-section-heading">
+            <div>
+              <h2>Overview</h2>
+              <p>Snapshot of your portfolio content. Nothing here is visible publicly until you publish.</p>
+            </div>
+            <a className="admin-button admin-button-primary" href="/preview" target="_blank" rel="noopener noreferrer">Preview draft</a>
+          </div>
+          <div className="admin-stat-grid">
+            <OverviewStat label="Projects" value={stats.projects} detail="published after next release" />
+            <OverviewStat label="Certificates" value={stats.certificates} detail="verified records" />
+            <OverviewStat label="Achievements" value={stats.achievements} detail="awards & recognitions" />
+            <OverviewStat label="Skills" value={stats.skills} detail="across all categories" />
+            <OverviewStat label="Education entries" value={stats.education} detail="tertiary / secondary / elementary" />
+            <OverviewStat label="Experience entries" value={stats.experience} detail="work, OJT, volunteer, academic" />
+          </div>
+          <div className="admin-overview-grid">
+            <div className="admin-overview-panel">
+              <h3>Publish status</h3>
+              <p>
+                {isPublished
+                  ? 'Your portfolio is published. Recruiters see the last published version.'
+                  : 'Your portfolio is not published. Recruiters cannot see your draft content.'}
+              </p>
+              <dl className="admin-record-summary">
+                <div>
+                  <dt>Last content save</dt>
+                  <dd>{formatTimestamp(contentUpdatedAt)}</dd>
+                </div>
+                <div>
+                  <dt>Visibility</dt>
+                  <dd>{isPublished ? 'Published' : 'Hidden (draft only)'}</dd>
+                </div>
+                <div>
+                  <dt>Assets pending cleanup</dt>
+                  <dd>{needsAssetCleanup ? `${cleanupPaths.length || 'Some'} asset(s) queued` : 'None'}</dd>
+                </div>
+              </dl>
+              <div className="admin-form-actions">
+                {needsAssetCleanup ? (
+                  <button className="admin-button" type="button" disabled={busy} onClick={retryAssetCleanup}>Retry public asset cleanup</button>
+                ) : null}
+                {isPublished ? (
+                  <button className="admin-button admin-button-danger" type="button" disabled={busy} onClick={unpublish}>Unpublish</button>
+                ) : (
+                  <button className="admin-button admin-button-primary" type="button" disabled={busy} onClick={publish}>Publish to recruiters</button>
+                )}
+              </div>
+            </div>
+            <div className="admin-overview-panel">
+              <h3>Launch readiness</h3>
+              <ul className="admin-checklist">
+                {readiness.map((item) => (
+                  <li key={item.label} className={item.done ? 'is-done' : 'is-pending'}>
+                    <span className="admin-check-mark" aria-hidden="true">{item.done ? '✓' : '!'}</span>
+                    <button type="button" className="text-button" onClick={() => setActiveTab(item.tab)}>
+                      {item.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <p className="admin-overview-note">
+                Preview the draft exactly as it will appear publicly, then publish when everything checks out.
+              </p>
+            </div>
+          </div>
         </section>
-      ) : (
-        <>
-      <nav className="admin-tabs" aria-label="Portfolio editor sections">
-        {tabs.map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            className={activeTab === id ? 'admin-tab is-active' : 'admin-tab'}
-            aria-current={activeTab === id ? 'page' : undefined}
-            onClick={() => setActiveTab(id)}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
+      ) : null}
 
       {activeTab === 'profile' ? (
         <section className="editor-section">
-          <h2>Profile and contact</h2>
+          <h2>Profile</h2>
           <p>Use truthful, recruiter-ready details. Changes remain drafts until published.</p>
           <div className="admin-form-grid">
             {[
               ['hero.name', 'Full name'],
               ['hero.title', 'Professional title'],
-              ['hero.eyebrow', 'Short headline'],
               ['hero.focus', 'Short introduction'],
               ['about.introduction', 'About me'],
               ['about.careerObjective', 'Career objective'],
               ['about.educationSummary', 'Education summary'],
-              ['contact.email', 'Professional email'],
-              ['contact.github', 'GitHub URL'],
-              ['contact.linkedin', 'LinkedIn URL'],
             ].map(([path, label]) => (
               <TextField
                 key={path}
                 label={label}
                 multiline={['hero.focus', 'about.introduction', 'about.careerObjective', 'about.educationSummary'].includes(path)}
-                type={path === 'contact.email' ? 'email' : 'text'}
                 value={readPath(draft, path)}
                 onChange={(value) => setDraft((current) => updatePath(current, path, value))}
               />
             ))}
             <TextField
-              label="Areas of interest (one per line)"
+              label="Areas of interest in IT (one per line)"
               multiline
               value={(draft.about.interests || []).join('\n')}
               onChange={(value) => setDraft((current) => updatePath(current, 'about.interests', value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean)))}
@@ -762,58 +1018,53 @@ export default function AdminDashboard({ onLogout }) {
               label="Portrait image description"
               value={draft.hero.portrait?.alt || ''}
               onChange={(value) => setDraft((current) => updatePath(current, 'hero.portrait.alt', value))}
+              hint="Describe the photo for screen readers. Keep it factual."
             />
           </div>
           <div className="admin-upload-row">
-            <label className="admin-upload">
-              <span>Upload professional photo</span>
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={(event) => {
-                  if (event.target.files?.[0]) uploadProfilePhoto(event.target.files[0]).catch((error) => setStatus(error.message));
-                  event.target.value = '';
-                }}
-              />
-            </label>
-            {draft.hero.portrait?.src ? <DraftAssetImage className="admin-photo-preview" src={draft.hero.portrait.src} alt={draft.hero.portrait.alt || ''} /> : null}
-            <label className="admin-upload">
-              <span>Upload resume PDF</span>
-              <input
-                type="file"
-                accept="application/pdf"
-                onChange={(event) => {
-                  if (event.target.files?.[0]) uploadResume(event.target.files[0]).catch((error) => setStatus(error.message));
-                  event.target.value = '';
-                }}
-              />
-            </label>
-            {draft.resumePath ? <DraftAssetLink src={draft.resumePath}>Open current resume</DraftAssetLink> : null}
+            {draft.hero.portrait?.src ? (
+              <DraftAssetImage className="admin-photo-preview" src={draft.hero.portrait.src} alt={draft.hero.portrait.alt || ''} />
+            ) : (
+              <p className="admin-empty">No photo uploaded yet.</p>
+            )}
+            <button className="admin-button" type="button" onClick={() => setActiveTab('settings')}>
+              Manage photo and resume in Website settings
+            </button>
           </div>
         </section>
       ) : null}
 
       {activeTab === 'skills' ? (
-        <RecordListEditor key={`skills-${editRevision}`} title="Skills" path="skills" draft={draft} fields={listFields.skills} onChange={setDraft} onUploadError={setStatus} onEditingChange={reportRecordEditing} />
+        <RecordListEditor key={`skills-${editRevision}`} addLabel="Add skill" title="Skills" path="skills" draft={draft} fields={listFields.skills} onChange={setDraft} onUploadError={setStatus} onEditingChange={reportRecordEditing} emptyTitle="No skills yet. Add the ones you can genuinely substantiate." />
       ) : null}
       {activeTab === 'certificates' ? (
-        <RecordListEditor key={`certificates-${editRevision}`} title="Certificates and achievements" path="certificates" draft={draft} fields={listFields.certificates} onChange={setDraft} onUploadError={setStatus} onEditingChange={reportRecordEditing} allowCertificateFile />
+        <RecordListEditor key={`certificates-${editRevision}`} addLabel="Add certificate" title="Certificates" path="certificates" draft={draft} fields={listFields.certificates} onChange={setDraft} onUploadError={setStatus} onEditingChange={reportRecordEditing} allowCertificateFile recordFilter={CERTIFICATE_FILTER} emptyTitle="No certificates yet. Add certificates with their issuing organization and date." />
+      ) : null}
+      {activeTab === 'achievements' ? (
+        <RecordListEditor key={`achievements-${editRevision}`} addLabel="Add achievement" title="Achievements" path="certificates" draft={draft} fields={listFields.achievements} onChange={setDraft} onUploadError={setStatus} onEditingChange={reportRecordEditing} allowCertificateFile recordFilter={ACHIEVEMENT_FILTER} fixedType="Achievement" emptyTitle="No achievements yet. Add genuine awards or recognitions only." />
       ) : null}
       {activeTab === 'eligibility' ? (
-        <RecordListEditor key={`eligibility-${editRevision}`} title="Eligibility records" path="eligibility" draft={draft} fields={listFields.eligibility} onChange={setDraft} onUploadError={setStatus} onEditingChange={reportRecordEditing} />
+        <RecordListEditor key={`eligibility-${editRevision}`} addLabel="Add eligibility record" title="Eligibility and certifications" path="eligibility" draft={draft} fields={listFields.eligibility} onChange={setDraft} onUploadError={setStatus} onEditingChange={reportRecordEditing} emptyTitle="No eligibility records yet. Planned certifications are not shown publicly until completed." />
       ) : null}
       {activeTab === 'experience' ? (
         <div className="editor-stack">
-          {['work', 'internship', 'volunteer'].map((category) => (
+          {[
+            ['work', 'Work experience'],
+            ['internship', 'Internship / OJT'],
+            ['volunteer', 'Volunteer experience'],
+            ['academic', 'Relevant academic and cybersecurity activities'],
+          ].map(([category, label]) => (
             <RecordListEditor
               key={`${category}-${editRevision}`}
-              title={`${category[0].toUpperCase()}${category.slice(1)} experience`}
+              addLabel="Add entry"
+              title={label}
               path={`experience.${category}`}
               draft={draft}
               fields={listFields.experience}
               onChange={setDraft}
               onUploadError={setStatus}
               onEditingChange={reportRecordEditing}
+              emptyTitle={`No ${category === 'academic' ? 'academic or CTF activities' : `${category} experience`} published yet.`}
             />
           ))}
         </div>
@@ -839,12 +1090,12 @@ export default function AdminDashboard({ onLogout }) {
         </section>
       ) : null}
       {activeTab === 'projects' ? (
-        <RecordListEditor key={`projects-${editRevision}`} title="Projects" path="projects" draft={draft} fields={listFields.projects} onChange={setDraft} onUploadError={setStatus} onEditingChange={reportRecordEditing} allowScreenshots />
+        <RecordListEditor key={`projects-${editRevision}`} addLabel="Add project" title="Projects" path="projects" draft={draft} fields={listFields.projects} onChange={setDraft} onUploadError={setStatus} onEditingChange={reportRecordEditing} allowScreenshots emptyTitle="No projects yet. Add genuine academic, CTF, or personal projects with at least two screenshots each." />
       ) : null}
       {activeTab === 'design' ? (
         <section className="editor-section">
           <h2>Visual design</h2>
-          <p>Choose a preset, then adjust colors, typography, spacing, and hero layout.</p>
+          <p>Choose a preset, then adjust colors, typography, spacing, hero layout, and section visibility.</p>
           <div className="admin-form-grid">
             <div className="admin-field">
               <label htmlFor="design-preset">Color preset</label>
@@ -898,6 +1149,20 @@ export default function AdminDashboard({ onLogout }) {
               </div>
             ))}
           </div>
+          <fieldset className="record-card admin-visibility-card">
+            <legend>Section visibility</legend>
+            <p className="admin-visibility-hint">Hidden sections never render publicly, even if they have content.</p>
+            <div className="admin-visibility-grid">
+              {sectionVisibilityIds.map((id) => (
+                <CheckboxField
+                  key={id}
+                  label={sectionVisibilityLabels[id] || id}
+                  checked={designDraft.section_visibility?.[id] !== false}
+                  onChange={(checked) => toggleSectionVisibility(id, checked)}
+                />
+              ))}
+            </div>
+          </fieldset>
           <div className="admin-upload-row">
             <label className="admin-upload">
               <span>Upload WOFF2 font (optional)</span>
@@ -915,11 +1180,58 @@ export default function AdminDashboard({ onLogout }) {
           <button className="admin-button admin-button-primary" type="button" disabled={busy} onClick={saveDesign}>Save design</button>
         </section>
       ) : null}
+      {activeTab === 'settings' ? (
+        <section className="editor-section">
+          <div className="editor-section-heading">
+            <div>
+              <h2>Website settings</h2>
+              <p>Site title, tagline, social links, contact information, photo, and resume. Saved with your draft; publish when ready.</p>
+            </div>
+          </div>
+          <div className="admin-form-grid">
+            <TextField label="Website title (header and browser tab)" value={draft.meta.siteName} onChange={(value) => setDraft((current) => updatePath(current, 'meta.siteName', value))} />
+            <TextField label="Professional tagline (hero eyebrow)" value={draft.hero.eyebrow} onChange={(value) => setDraft((current) => updatePath(current, 'hero.eyebrow', value))} hint="Short phrase shown above your name, for example your focus area. Leave empty to hide it." />
+            <TextField label="Search engine title" value={draft.meta.homeTitle} onChange={(value) => setDraft((current) => updatePath(current, 'meta.homeTitle', value))} />
+            <TextField label="Search engine description" multiline value={draft.meta.homeDescription} onChange={(value) => setDraft((current) => updatePath(current, 'meta.homeDescription', value))} />
+            <TextField label="Contact form subject line" value={draft.contactSubject} onChange={(value) => setDraft((current) => updatePath(current, 'contactSubject', value))} />
+            <TextField label="Professional email" type="email" value={draft.contact.email || ''} onChange={(value) => setDraft((current) => updatePath(current, 'contact.email', value))} />
+            <TextField label="GitHub profile URL" value={draft.contact.github || ''} onChange={(value) => setDraft((current) => updatePath(current, 'contact.github', value))} />
+            <TextField label="LinkedIn profile URL" value={draft.contact.linkedin || ''} onChange={(value) => setDraft((current) => updatePath(current, 'contact.linkedin', value))} />
+          </div>
+          <div className="admin-upload-row">
+            <label className="admin-upload">
+              <span>Upload professional photo</span>
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(event) => {
+                  if (event.target.files?.[0]) uploadProfilePhoto(event.target.files[0]).catch((error) => setStatus(error.message));
+                  event.target.value = '';
+                }}
+              />
+            </label>
+            {draft.hero.portrait?.src ? <DraftAssetImage className="admin-photo-preview" src={draft.hero.portrait.src} alt={draft.hero.portrait.alt || ''} /> : <p className="admin-empty">No photo uploaded yet.</p>}
+            <label className="admin-upload">
+              <span>Upload resume PDF</span>
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={(event) => {
+                  if (event.target.files?.[0]) uploadResume(event.target.files[0]).catch((error) => setStatus(error.message));
+                  event.target.value = '';
+                }}
+              />
+            </label>
+            {draft.resumePath ? <DraftAssetLink src={draft.resumePath}>Open current resume</DraftAssetLink> : null}
+          </div>
+        </section>
+      ) : null}
 
-      {activeTab !== 'design' ? (
+      {activeTab !== 'design' && activeTab !== 'overview' ? (
         <footer className="admin-publish-bar">
           <p>{isPublished ? 'Your portfolio is published. Draft edits are not public until you publish.' : 'Your current edits are a private draft.'}</p>
           <div>
+            <a className="admin-button" href="/preview" target="_blank" rel="noopener noreferrer">Preview draft</a>
             <button className="admin-button" type="button" disabled={busy} onClick={discardContentEdits}>Discard edits</button>
             <button className="admin-button" type="button" disabled={busy} onClick={saveDraft}>Save draft</button>
             <button className="admin-button admin-button-primary" type="button" disabled={busy} onClick={publish}>Publish to recruiters</button>
@@ -929,8 +1241,9 @@ export default function AdminDashboard({ onLogout }) {
         </footer>
       ) : null}
       {status ? <p className="admin-status" role="status" aria-live="polite">{status}</p> : null}
-        </>
-      )}
+          </>
+        )}
+      </div>
     </main>
   );
 }

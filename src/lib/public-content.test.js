@@ -19,7 +19,17 @@ test('public fallback content contains no template instructions or fictional rec
   ));
   assert.equal(content.skills.length, 0);
   assert.equal(content.certificates.length, 0);
-  assert.deepEqual(content.experience, { work: [], internship: [], volunteer: [] });
+  assert.deepEqual(content.experience, {
+    work: [],
+    internship: [],
+    volunteer: [],
+    academic: [{
+      id: 'packet-capture-ctf-osint',
+      role: 'CTF participant',
+      organization: 'PacketCapture CTF',
+      summary: 'Solved an OSINT challenge by following clues from an image through public social media posts.',
+    }],
+  });
   assert.equal(content.projects.length, 0);
   assert.equal(content.resumePath, '/resume/RotugalJasmine.pdf');
 });
@@ -56,6 +66,7 @@ test('public certificate and contact copy is accurate and avoids backend details
   assert.equal(content.ui.statusLabels['self-reported'], 'Self-reported');
   assert.match(content.ui.statusDescriptions['issuer-verifiable'], /does not independently confirm/i);
   assert.equal(content.ui.portraitPlaceholder, 'Portrait photograph not provided');
+  assert.equal(content.ui.contactLabels.sent, 'Your message was received. Thank you.');
   assert.doesNotMatch(content.ui.contactLabels.hint, /supabase|backend|server|api/i);
   assert.equal(
     content.ui.contactLabels.emailDraft,

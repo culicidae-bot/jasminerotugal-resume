@@ -5,6 +5,12 @@ function hasText(value) {
   return typeof value === 'string' && value.trim() !== '' && !isTodo(value);
 }
 
+export function getSkillProficiency(value) {
+  if (value === null || value === undefined || String(value).trim() === '') return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? Math.min(100, Math.max(0, numeric)) : null;
+}
+
 function hasProjectScreenshots(project) {
   if (!Array.isArray(project?.screenshots)) return false;
   const screenshots = project.screenshots.filter(
@@ -54,7 +60,7 @@ export function hasPublicSectionContent(id, content) {
     return Array.isArray(content.eligibility) && content.eligibility.some((item) => hasText(item?.title));
   }
   if (id === 'experience') {
-    return ['work', 'internship', 'volunteer'].some(
+    return ['work', 'internship', 'volunteer', 'academic'].some(
       (group) =>
         Array.isArray(content.experience?.[group]) &&
         content.experience[group].some(isPublicExperience),

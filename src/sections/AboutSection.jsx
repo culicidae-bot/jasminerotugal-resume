@@ -1,6 +1,8 @@
 import ImageSlot, { isUsableImage } from '../components/ImageSlot.jsx';
+import { ExternalIcon } from '../components/Icons.jsx';
 import Section from '../components/Section.jsx';
 import TodoText from '../components/TodoText.jsx';
+import { isSafeHttpUrl, mailtoSafeAddress } from '../lib/urls.js';
 import { useSite } from '../lib/site-context.js';
 
 export default function AboutSection({ index }) {
@@ -8,6 +10,10 @@ export default function AboutSection({ index }) {
   const section = content.sections.about;
   const labels = content.ui.aboutLabels;
   const hasImage = isUsableImage(content.about.image);
+  const email = mailtoSafeAddress(content.contact.email);
+  const github = isSafeHttpUrl(content.contact.github) ? content.contact.github : null;
+  const linkedin = isSafeHttpUrl(content.contact.linkedin) ? content.contact.linkedin : null;
+  const hasProfiles = Boolean(email || github || linkedin);
 
   return (
     <Section id="about" label={section.label} title={section.title} intro={section.intro} index={index}>
@@ -36,6 +42,23 @@ export default function AboutSection({ index }) {
               ))}
             </ul>
           </div>
+          {hasProfiles ? (
+            <nav className="about-links" aria-label={content.ui.professionalLinks}>
+              {email ? <a href={`mailto:${email}`}>{content.ui.contactLabels.email}: {email}</a> : null}
+              {github ? (
+                <a href={github} target="_blank" rel="noopener noreferrer">
+                  {content.ui.contactLabels.github}<ExternalIcon />
+                  <span className="visually-hidden"> ({content.ui.opensNewTab})</span>
+                </a>
+              ) : null}
+              {linkedin ? (
+                <a href={linkedin} target="_blank" rel="noopener noreferrer">
+                  {content.ui.contactLabels.linkedin}<ExternalIcon />
+                  <span className="visually-hidden"> ({content.ui.opensNewTab})</span>
+                </a>
+              ) : null}
+            </nav>
+          ) : null}
         </div>
         {hasImage ? (
           <div className="about-media">

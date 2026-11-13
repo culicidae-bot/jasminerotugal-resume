@@ -1,6 +1,8 @@
 import Section from '../components/Section.jsx';
+import { ExternalIcon } from '../components/Icons.jsx';
 import TodoText from '../components/TodoText.jsx';
 import { formatDate } from '../lib/format.js';
+import { isSafeHttpsUrl } from '../lib/urls.js';
 import { useSite } from '../lib/site-context.js';
 
 export default function EligibilitySection({ index }) {
@@ -26,6 +28,15 @@ export default function EligibilitySection({ index }) {
                   <p>
                     <TodoText value={record.issuer} />
                   </p>
+                  {record.extra ? <p>{record.extra}</p> : null}
+                  {isSafeHttpsUrl(record.verifyUrl) ? (
+                    <p>
+                      <a className="text-link external-link" href={record.verifyUrl} target="_blank" rel="noopener noreferrer">
+                        {content.ui.verifyEligibility}<ExternalIcon />
+                        <span className="visually-hidden"> ({content.ui.opensNewTab})</span>
+                      </a>
+                    </p>
+                  ) : null}
                 </div>
                 <p className="record-date">
                   {date ? (

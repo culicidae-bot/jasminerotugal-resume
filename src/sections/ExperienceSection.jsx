@@ -18,22 +18,27 @@ function ExperienceItem({ item, labels }) {
         ) : null}
       </header>
       <div className="experience-body">
-        <div>
-          <h5>{labels.responsibilities}</h5>
-          <ul>
-            {(item.responsibilities || []).map((responsibility) => (
-              <li key={responsibility}>{responsibility}</li>
-            ))}
-          </ul>
-        </div>
-        <div>
-          <h5>{labels.accomplishments}</h5>
-          <ul>
-            {(item.accomplishments || []).map((accomplishment) => (
-              <li key={accomplishment}>{accomplishment}</li>
-            ))}
-          </ul>
-        </div>
+        {item.summary ? <p>{item.summary}</p> : null}
+        {item.responsibilities?.length ? (
+          <div>
+            <h5>{labels.responsibilities}</h5>
+            <ul>
+              {item.responsibilities.map((responsibility) => (
+                <li key={responsibility}>{responsibility}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+        {item.accomplishments?.length ? (
+          <div>
+            <h5>{labels.accomplishments}</h5>
+            <ul>
+              {item.accomplishments.map((accomplishment) => (
+                <li key={accomplishment}>{accomplishment}</li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </div>
     </article>
   );
@@ -43,7 +48,7 @@ export default function ExperienceSection({ index }) {
   const { content } = useSite();
   const section = content.sections.experience;
   const labels = content.ui.experienceLabels;
-  const groups = ['work', 'internship', 'volunteer'];
+  const groups = ['work', 'internship', 'volunteer', 'academic'];
 
   return (
     <Section

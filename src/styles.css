@@ -791,6 +791,30 @@ main > .home-page > .section:first-child {
   max-width: 66ch;
 }
 
+.about-links,
+.project-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.about-links a,
+.project-links a {
+  color: var(--color-link);
+  overflow-wrap: anywhere;
+}
+
+.project-summary {
+  max-width: 68ch;
+  margin-top: 1rem;
+  line-height: 1.7;
+}
+
+.project-links {
+  margin-top: 1rem;
+}
+
 .hairline-list {
   list-style: none;
 }
@@ -2282,5 +2306,398 @@ main > .home-page > .section:first-child {
     font-size: 0.85em;
     font-weight: 400;
     overflow-wrap: anywhere;
+  }
+}
+
+/* ============================================================
+   REDESIGN LAYER — cybersecurity-themed dark navy + violet
+   Appended 2026; overrides the base presentation above.
+   ============================================================ */
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--color-primary) 9%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--color-primary) 9%, transparent) 1px, transparent 1px);
+  background-size: 52px 52px;
+  mask-image: radial-gradient(ellipse 110% 65% at 50% -5%, black 0%, transparent 62%);
+  -webkit-mask-image: radial-gradient(ellipse 110% 65% at 50% -5%, black 0%, transparent 62%);
+}
+
+/* ---------- Header ---------- */
+
+.site-header {
+  border-bottom: 1px solid color-mix(in srgb, var(--color-primary) 32%, var(--color-border));
+  background: color-mix(in srgb, var(--color-bg) 82%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.brand-name {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.brand-name::before {
+  content: '';
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 2px;
+  background: var(--color-primary);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--color-primary) 80%, transparent);
+  transform: rotate(45deg);
+}
+
+.primary-nav a {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  border-bottom: 2px solid transparent;
+  transition: color 160ms ease, border-color 160ms ease;
+}
+
+.primary-nav a:hover {
+  color: var(--color-link);
+}
+
+.primary-nav a[aria-current="page"] {
+  border-bottom-color: var(--color-primary);
+  color: var(--color-text);
+}
+
+/* ---------- Hero ---------- */
+
+.hero {
+  background:
+    radial-gradient(ellipse 55% 50% at 78% 8%, color-mix(in srgb, var(--color-primary) 26%, transparent), transparent 60%),
+    radial-gradient(ellipse 45% 45% at 8% 95%, color-mix(in srgb, var(--color-primary) 14%, transparent), transparent 55%),
+    var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1.35rem;
+  padding: 0.4rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+  color: var(--color-link);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+}
+
+.hero-eyebrow::before {
+  content: '';
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 0 10px var(--color-primary);
+}
+
+.hero h1 {
+  font-size: clamp(2.6rem, 6.5vw, 4.2rem);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  font-weight: 800;
+}
+
+.hero-title {
+  color: var(--color-link);
+  font-family: var(--font-mono);
+  font-size: clamp(0.82rem, 1.5vw, 0.98rem);
+  letter-spacing: 0.02em;
+  text-transform: none;
+  max-width: 52ch;
+}
+
+.hero-focus {
+  color: color-mix(in srgb, var(--color-text) 88%, transparent);
+}
+
+.hero-media {
+  position: relative;
+}
+
+.hero-media::before,
+.hero-media::after {
+  content: '';
+  position: absolute;
+  width: 2.5rem;
+  height: 2.5rem;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.hero-media::before {
+  top: -0.75rem;
+  left: -0.75rem;
+  border-top: 2px solid var(--color-primary);
+  border-left: 2px solid var(--color-primary);
+  border-top-left-radius: 0.6rem;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--color-primary) 70%, transparent));
+}
+
+.hero-media::after {
+  bottom: -0.75rem;
+  right: -0.75rem;
+  border-bottom: 2px solid var(--color-primary);
+  border-right: 2px solid var(--color-primary);
+  border-bottom-right-radius: 0.6rem;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--color-primary) 70%, transparent));
+}
+
+.hero-portrait-placeholder {
+  border: 1px dashed color-mix(in srgb, var(--color-primary) 40%, var(--color-border));
+  background:
+    radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--color-primary) 14%, transparent), transparent 60%),
+    var(--color-surface);
+}
+
+.portrait-placeholder-monogram {
+  color: var(--color-link);
+  text-shadow: 0 0 28px color-mix(in srgb, var(--color-primary) 65%, transparent);
+}
+
+/* ---------- Buttons ---------- */
+
+.button-primary {
+  border-radius: 0.5rem;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-primary) 55%, transparent),
+    0 10px 34px -12px color-mix(in srgb, var(--color-primary) 65%, transparent);
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .button-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--color-primary) 75%, transparent),
+      0 14px 40px -12px color-mix(in srgb, var(--color-primary) 75%, transparent);
+  }
+}
+
+.button-secondary {
+  border-radius: 0.5rem;
+  border-color: color-mix(in srgb, var(--color-primary) 35%, var(--color-border));
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.button-secondary:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+/* ---------- Section headings ---------- */
+
+.section-kicker {
+  align-items: baseline;
+  gap: 0.85rem;
+}
+
+.section-number {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.3rem;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--color-primary) 45%, transparent);
+  border-radius: 0.35rem;
+  color: var(--color-link);
+  font-size: 0.78rem;
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.section-heading h2 {
+  letter-spacing: -0.025em;
+  font-weight: 760;
+}
+
+/* ---------- Cards: projects, experience, certificates ---------- */
+
+.project,
+.experience-item {
+  border: 1px solid var(--color-border);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-raised) 42%, transparent), transparent 42%),
+    var(--color-surface);
+  transition: border-color 200ms ease;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .project:hover {
+    border-color: color-mix(in srgb, var(--color-primary) 50%, var(--color-border));
+  }
+}
+
+.item-label {
+  color: var(--color-link);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.featured-badge {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #0B1120;
+  background: var(--color-link);
+  padding: 0.2rem 0.55rem;
+  border-radius: 0.25rem;
+  font-weight: 700;
+}
+
+.inline-list li {
+  border: 1px solid color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
+  background: color-mix(in srgb, var(--color-primary) 9%, transparent);
+}
+
+/* ---------- Skills: segmented proficiency bar ---------- */
+
+.skill-progress {
+  height: 0.5rem;
+  border-radius: 999px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0,
+      transparent calc(10% - 2px),
+      color-mix(in srgb, var(--color-bg) 70%, transparent) calc(10% - 2px),
+      color-mix(in srgb, var(--color-bg) 70%, transparent) 10%
+    ),
+    var(--color-raised);
+}
+
+.skill-progress::-webkit-progress-bar {
+  background: transparent;
+}
+
+.skill-progress::-webkit-progress-value {
+  border-radius: 999px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--color-primary) 70%, #3b2a7a), var(--color-primary) 60%, var(--color-link));
+}
+
+.skill-progress::-moz-progress-bar {
+  border-radius: 999px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--color-primary) 70%, #3b2a7a), var(--color-primary) 60%, var(--color-link));
+}
+
+.skill-category > h3 {
+  color: var(--color-link);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-primary) 25%, var(--color-border));
+  padding-bottom: 0.55rem;
+}
+
+/* ---------- Contact form ---------- */
+
+.contact-form {
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  padding: clamp(1rem, 3vw, 1.75rem);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--color-raised) 40%, transparent), transparent 55%),
+    var(--color-surface);
+}
+
+.contact-form input,
+.contact-form textarea {
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.contact-form input:focus,
+.contact-form textarea:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 28%, transparent);
+}
+
+/* ---------- Footer ---------- */
+
+.site-footer {
+  border-top: 1px solid color-mix(in srgb, var(--color-primary) 30%, var(--color-border));
+  background: color-mix(in srgb, var(--color-surface) 80%, transparent);
+}
+
+.footer-name {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.footer-nav a {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ---------- Draft preview banner + shell ---------- */
+
+.preview-banner {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem 1.5rem;
+  padding: 0.55rem clamp(1rem, 4vw, 2rem);
+  background: #E9C46A;
+  color: #241A04;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.preview-banner-link {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.preview-shell {
+  padding: 4rem clamp(1.25rem, 5vw, 3rem);
+  max-width: 46rem;
+}
+
+.preview-message {
+  padding: 2rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+}
+
+.preview-message h1 {
+  margin-top: 0;
+}
+
+/* ---------- Certificates register polish ---------- */
+
+.register-row:hover,
+.certificate-row:hover {
+  background: color-mix(in srgb, var(--color-primary) 7%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before {
+    mask-image: none;
+    -webkit-mask-image: none;
   }
 }

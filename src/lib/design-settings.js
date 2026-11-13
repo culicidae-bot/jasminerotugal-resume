@@ -21,7 +21,31 @@ const databaseDesignKeys = [
   'text_color',
   'hero_variant',
   'font_url',
+  'section_visibility',
 ];
+
+export const sectionVisibilityIds = [
+  'hero',
+  'about',
+  'skills',
+  'certificates',
+  'eligibility',
+  'experience',
+  'projects',
+  'education',
+  'security',
+  'contact',
+];
+
+export function sanitizeSectionVisibility(value) {
+  const fallback = fallbackDesignSettings.sectionVisibility;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return { ...fallback };
+  const merged = { ...fallback };
+  for (const id of sectionVisibilityIds) {
+    if (typeof value[id] === 'boolean') merged[id] = value[id];
+  }
+  return merged;
+}
 const clampValue = (value, min, max) => Math.min(Math.max(Number(value) || 0, min), max);
 
 export function sanitizeHex(value, fallback = '#000000') {
@@ -99,6 +123,7 @@ export function normalizeDatabaseDesign(raw = {}) {
     },
     padding: sanitizeNumber(parsed.section_padding ?? parsed.padding, 40, 160, 88),
     fontUrl: sanitizeFontUrl(parsed.font_url),
+    sectionVisibility: sanitizeSectionVisibility(parsed.section_visibility ?? settings.sectionVisibility),
   };
 }
 

@@ -63,8 +63,8 @@ export const content = {
     },
     experience: {
       label: 'Experience',
-      title: 'Experience.',
-      intro: 'Work, internship, and volunteer experience.',
+      title: 'Experience',
+      intro: '',
     },
     projects: {
       label: 'Projects',
@@ -105,13 +105,23 @@ export const content = {
     },
   },
   skills: [],
-  certificateTypes: ['IT Certification', 'Training', 'Workshop', 'Seminar', 'Award'],
+  certificateTypes: ['IT Certification', 'Training', 'Workshop', 'Seminar', 'Award', 'Achievement'],
+  achievementTypes: ['Achievement', 'Award'],
   certificates: [],
   eligibility: [],
   experience: {
     work: [],
     internship: [],
     volunteer: [],
+    academic: [
+      {
+        id: 'packet-capture-ctf-osint',
+        role: 'CTF participant',
+        organization: 'PacketCapture CTF',
+        summary:
+          'Solved an OSINT challenge by following clues from an image through public social media posts.',
+      },
+    ],
   },
   projects: [],
   education: {
@@ -250,6 +260,7 @@ export const content = {
       work: 'Work',
       internship: 'Internship / OJT',
       volunteer: 'Volunteer',
+      academic: 'Relevant academic and cybersecurity activities',
     },
     experienceLabels: {
       responsibilities: 'Responsibilities',
@@ -262,6 +273,9 @@ export const content = {
       features: 'Key features',
       contributions: 'Contributions',
       screenshots: 'Screenshots',
+      projectLink: 'View project',
+      sourceLink: 'View source code',
+      featured: 'Featured',
     },
     browserBarLabel: 'Project screenshot',
     educationLabels: {
@@ -274,6 +288,7 @@ export const content = {
     securityProfilesTitle: 'Lab and CTF profiles',
     securityWriteupsTitle: 'Write-ups',
     openProfile: 'Open profile',
+    verifyEligibility: 'View verification information',
     contactLabels: {
       email: 'Email',
       github: 'GitHub',
@@ -291,7 +306,7 @@ export const content = {
       hint: 'Share a few details so your message can be reviewed.',
       emailDraft: 'Your email app should open with a draft. Nothing is sent until you press send.',
       openEmailDraft: 'Open email draft',
-      sent: 'Message sent.',
+      sent: 'Your message was received. Thank you.',
       genericError: 'Your message could not be sent. Please try again later.',
     },
     contactInvitation: 'For professional inquiries, please use the form below.',
@@ -483,6 +498,7 @@ export const sampleContent = import.meta.env?.DEV
         ],
       }),
     ],
+    academic: content.experience.academic,
   },
   projects: [
     sampleEntry({

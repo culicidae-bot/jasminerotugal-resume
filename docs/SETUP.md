@@ -107,3 +107,14 @@ The migration does not delete or approve existing objects. Review them using the
 3. Review each recursively listed object. Choose **Keep public** only for an asset explicitly approved for publication; choose **Move to private originals** for an unapproved asset whose private copy should be retained; choose **Skip** if its purpose or value is unknown. No object is changed without a per-object choice.
 4. Moving an asset first copies it to `originals` and rewrites matching unpublished setting references. The public copy is removed only after it is queued and checked against all currently published `site_settings` references. If it is still referenced by published content, the tool refuses the move; unpublish or replace that reference first. Failed deletion stays in the owner/AAL2 cleanup queue and can be retried from `/admin`.
 5. To verify a fresh project needs no legacy migration, run the inventory tool and confirm it reports no objects; also confirm `public-media` is empty in Storage → Buckets. An empty inventory does not make `public-media` private: future published assets remain publicly retrievable by URL.
+
+## 8) Preview route and launch checklist
+
+The app also ships a `/preview` route that renders the public site with the unpublished draft. It is protected the same way as `/admin`: anonymous visitors and signed-in non-owners are shown an owner-required message and never receive draft content, because the underlying Supabase reads are restricted to the owner at `aal2`. `vercel.json` serves `/preview` with `X-Robots-Tag: noindex` and `Cache-Control: no-store`; keep that configuration.
+
+Before launch:
+
+1. Migrations applied in order; `app_owner` registered; TOTP enrolled and verified at `aal2`.
+2. `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_CONTACT_FUNCTION_URL`, `VITE_SITE_ORIGIN` set for the deployment; real project URL present in `vercel.json` CSP (replace the placeholder origin you may find there).
+3. Sign in at `/admin`, confirm **Overview** shows zero required-item misses, use **Preview draft**, then publish.
+4. Confirm `/` and `/certificates` load for an anonymous browser session, and `/admin`/`/preview` show sign-in/owner-required messages when signed out.

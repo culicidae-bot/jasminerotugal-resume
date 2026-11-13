@@ -17,10 +17,12 @@ import CertificatesPage from './pages/CertificatesPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 
 const AdminAuthPage = lazy(() => import('./pages/AdminAuthPage.jsx'));
+const AdminPreviewPage = lazy(() => import('./pages/AdminPreviewPage.jsx'));
 
 export default function App() {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
+  const isPreviewRoute = location.pathname === '/preview';
   const baseContent = content;
   const [publishedContent, setPublishedContent] = useState(null);
   const [design, setDesign] = useState(fallbackDesignSettings);
@@ -79,6 +81,11 @@ export default function App() {
               }
             />
           </Routes>
+        ) : isPreviewRoute ? (
+          <Suspense fallback={<div className="loading-shell">Loading preview…</div>}>
+            <ScrollManager />
+            <AdminPreviewPage design={design} />
+          </Suspense>
         ) : (
           <>
             <a className="skip-link" href="#main">
