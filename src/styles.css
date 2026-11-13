@@ -400,12 +400,13 @@ main {
 
 .hero h1 {
   width: 100%;
-  max-width: none;
-  overflow: hidden;
-  font-size: clamp(1.9rem, 10.5vw, 5.4rem);
+  max-width: 11ch;
+  overflow: visible;
+  font-size: clamp(2.6rem, 6.7vw, 5.5rem);
   letter-spacing: -0.045em;
   line-height: 0.98;
-  white-space: nowrap;
+  white-space: normal;
+  text-wrap: balance;
 }
 
 .hero[data-hero="centered"] h1 {
@@ -3004,4 +3005,97 @@ body::before {
   margin: 0 0 0.75rem;
   font-size: 1.05rem;
   letter-spacing: -0.01em;
+}
+
+
+/* PDF-reference viewer refinements: restrained resume layout, not dashboard UI. */
+.primary-nav .theme-toggle {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.about-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(2rem, 5vw, 4rem);
+  align-items: start;
+}
+
+.about-grid.has-media {
+  grid-template-columns: minmax(0, 1.35fr) minmax(14rem, 0.65fr);
+}
+
+.about-copy {
+  max-width: 72ch;
+}
+
+.hairline-list {
+  list-style: none;
+  max-width: 44rem;
+  margin-top: 0.5rem;
+  border-top: var(--border-width) solid var(--color-border);
+}
+
+.hairline-list li {
+  padding: 0.75rem 0;
+  border-bottom: var(--border-width) solid var(--color-border);
+  color: var(--color-muted);
+}
+
+.contact-section {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100svh;
+  padding-top: clamp(3rem, 6vh, 5rem);
+  padding-bottom: clamp(3rem, 6vh, 5rem);
+}
+
+.contact-section .section-heading h2 {
+  color: var(--color-inverse-text);
+}
+
+.contact-section .section-kicker,
+.contact-section .section-intro {
+  color: var(--color-inverse-soft);
+}
+
+.contact-section .section-number {
+  color: var(--color-inverse-text);
+  border-color: var(--color-inverse-soft);
+  background: transparent;
+}
+
+.contact-section .section-heading {
+  margin-bottom: clamp(2rem, 4vw, 3.25rem);
+}
+
+.form-hint {
+  margin-top: -0.65rem;
+  margin-bottom: 1.1rem;
+  color: var(--color-muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.contact-section .form-hint {
+  color: var(--color-inverse-soft);
+}
+
+@media (max-width: 760px) {
+  .hero h1 {
+    max-width: 11ch;
+    font-size: clamp(2.55rem, 11vw, 4rem);
+  }
+
+  .about-grid.has-media {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .contact-section {
+    min-height: auto;
+  }
 }
