@@ -20,25 +20,22 @@ export default function Footer() {
           </div>
         ) : null}
         {hasProfessionalLinks ? (
-          <div className="footer-links">
+          <nav className="footer-links" aria-label={content.ui.professionalLinks}>
             {email ? <a href={`mailto:${email}`}>{email}</a> : null}
             {github ? (
               <a href={github} target="_blank" rel="noopener noreferrer">
-                {content.contact.githubLabel}
-                <ExternalIcon />
+                {content.contact.githubLabel}<ExternalIcon />
                 <span className="visually-hidden"> ({content.ui.opensNewTab})</span>
               </a>
             ) : null}
             {linkedin ? (
               <a href={linkedin} target="_blank" rel="noopener noreferrer">
-                {content.contact.linkedinLabel}
-                <ExternalIcon />
+                {content.contact.linkedinLabel}<ExternalIcon />
                 <span className="visually-hidden"> ({content.ui.opensNewTab})</span>
               </a>
             ) : null}
-          </div>
+          </nav>
         ) : null}
-        <a className="footer-back-to-top" href="#top">{content.ui.backToTop}</a>
       </div>
     </footer>
   );
