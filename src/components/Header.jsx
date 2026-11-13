@@ -37,8 +37,8 @@ export default function Header() {
       <div className="header-inner">
         <Link className="brand" to="/">
           <span className="brand-name">{content.hero.name || 'Portfolio'}</span>
-          {content.hero.brandDetail ? (
-            <span className="brand-detail">{content.hero.brandDetail}</span>
+          {(content.hero.brandDetail || content.ui.brandDetail) ? (
+            <span className="brand-detail">{content.hero.brandDetail || content.ui.brandDetail}</span>
           ) : null}
         </Link>
         <nav className="primary-nav" aria-label={content.ui.primaryNavigation}>
