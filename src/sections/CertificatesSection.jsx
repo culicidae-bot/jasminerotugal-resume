@@ -1,69 +1,55 @@
-import ImageSlot from '../components/ImageSlot.jsx';
 import Section from '../components/Section.jsx';
-import TodoText from '../components/TodoText.jsx';
 import { CertificateStatus, CertificateType } from '../components/CertificateSignals.jsx';
 import { formatDate } from '../lib/format.js';
 import { sortByPriority } from '../lib/prioritize.js';
-import { useSite } from '../lib/site-context.js';
 import { isPublicCertificate } from '../lib/public-sections.js';
-
-function CertificateItem({ certificate, content, design }) {
-  const date = formatDate(certificate.dateEarned);
-  const target = `/certificates?cert=${encodeURIComponent(certificate.id)}`;
-
-  return (
-    <li>
-      <a className="certificate-row" href={target}>
-        {design.certificatesLayout === 'thumbnails' ? (
-          <span className="certificate-thumb">
-            {certificate.publicFile ? (
-              certificate.publicFile.mimeType === 'application/pdf' ? (
-                <span className="certificate-thumb-empty">PDF</span>
-              ) : (
-                <ImageSlot image={certificate.publicFile} kind="certificate-thumb" />
-              )
-            ) : (
-              <span className="certificate-thumb-empty">{content.ui.noCopyShort}</span>
-            )}
-          </span>
-        ) : null}
-        <span className="certificate-main">
-          <span className="certificate-title">{certificate.title}</span>
-          <span className="certificate-issuer"><TodoText value={certificate.issuer} /></span>
-        </span>
-        <span className="certificate-meta">
-          <CertificateType type={certificate.type} />
-          <CertificateStatus certificate={certificate} />
-          <span className="certificate-date">
-            {date ? <time dateTime={certificate.dateEarned}>{date}</time> : <TodoText value={certificate.dateEarned} />}
-          </span>
-        </span>
-      </a>
-    </li>
-  );
-}
+import { isSafeHttpsUrl } from '../lib/urls.js';
+import { useSite } from '../lib/site-context.js';
 
 export default function CertificatesSection({ index }) {
-  const { content, design } = useSite();
+  const { content } = useSite();
+  const section = content.sections.certificates;
   const records = sortByPriority((content.certificates || []).filter(isPublicCertificate));
 
   return (
     <Section
       id="certificates"
-      label="Credentials"
+      label={section.label}
       title="Certifications & Achievements"
-      intro="A record of completed certifications, training, workshops, and achievements."
+      intro="Selected credentials, training, and recognitions."
       index={index}
     >
-      <ul className="certificate-list" data-layout={design.certificatesLayout}>
-        {records.map((certificate) => (
-          <CertificateItem
-            key={certificate.id}
-            certificate={certificate}
-            content={content}
-            design={design}
-          />
-        ))}
+      <ul className="portfolio-credentials">
+        {records.map((record) => {
+          const date = formatDate(record.dateEarned);
+          const documentUrl = record.publicFile?.src || '';
+          const verifyUrl = isSafeHttpsUrl(record.verifyUrl) ? record.verifyUrl : '';
+          return (
+            <li className="portfolio-credential" key={record.id}>
+              <div className="portfolio-credential-main">
+                <div className="portfolio-credential-meta">
+                  <CertificateType type={record.type || 'Certificate'} />
+                  <CertificateStatus certificate={record} />
+                </div>
+                <h3>{record.title}</h3>
+                <p className="certificate-issuer">{record.issuer}</p>
+              </div>
+              <div className="portfolio-credential-actions">
+                {date ? <time dateTime={record.dateEarned}>{date}</time> : null}
+                {documentUrl ? (
+                  <a className="text-link" href={documentUrl} target="_blank" rel="noopener noreferrer">
+                    View certificate
+                  </a>
+                ) : null}
+                {verifyUrl ? (
+                  <a className="text-link" href={verifyUrl} target="_blank" rel="noopener noreferrer">
+                    Verify credential
+                  </a>
+                ) : null}
+              </div>
+            </li>
+          );
+        })}
       </ul>
     </Section>
   );
