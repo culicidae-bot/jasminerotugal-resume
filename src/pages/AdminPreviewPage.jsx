@@ -104,7 +104,6 @@ export default function AdminPreviewPage({ design = fallbackDesignSettings }) {
   return (
     <SiteContext.Provider value={site}>
       <PreviewBanner />
-      <a className="skip-link" href="#main">Skip to content</a>
       <Header />
       <main id="main" tabIndex="-1">
         <HomePage />

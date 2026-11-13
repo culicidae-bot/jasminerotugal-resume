@@ -113,12 +113,13 @@ test('education and certificate navigation omit unfinished records', () => {
 });
 
 test('only completed eligibility records are presented as attained', () => {
-  assert.equal(isPublicEligibility({ title: 'Civil Service Eligibility' }), true);
+  assert.equal(isPublicEligibility({ title: 'Civil Service Eligibility' }), false);
   assert.equal(
     isPublicEligibility({ title: 'Civil Service Eligibility', status: 'Completed' }),
     true,
   );
   assert.equal(isPublicEligibility({ title: 'Planned certification', status: 'Planned' }), false);
+  assert.equal(isPublicEligibility({ title: 'Pending certification', status: 'Pending' }), false);
   assert.equal(isPublicEligibility({ title: 'In progress', status: 'In progress' }), false);
   assert.equal(isPublicEligibility({ title: '[TODO: add eligibility]' }), false);
   assert.equal(isPublicEligibility({ title: '' }), false);

@@ -59,7 +59,7 @@ export default function CertificatesSection({ index }) {
   const section = content.sections.certificates;
   const publicRecords = (content.certificates || []).filter(isPublicCertificate);
   const { certificates, achievements } = splitRecords(publicRecords);
-  const spotlight = [...publicRecords].sort(
+  const spotlight = [...certificates].sort(
     (a, b) =>
       Number(b.featured === true) - Number(a.featured === true) ||
       priorityOf(a) - priorityOf(b),
@@ -71,9 +71,11 @@ export default function CertificatesSection({ index }) {
         <div className="credential-block">
           <p className="item-label">{content.ui.featuredCredentials}</p>
           <CredentialSpotlight records={spotlight} />
-          <div className="section-footer">
-            <Link className="text-link" to="/certificates">{content.ui.viewAllCertificates}</Link>
-          </div>
+        </div>
+      ) : null}
+      {certificates.length ? (
+        <div className="section-footer">
+          <Link className="text-link" to="/certificates">{content.ui.viewAllCertificates}</Link>
         </div>
       ) : null}
       {achievements.length ? (

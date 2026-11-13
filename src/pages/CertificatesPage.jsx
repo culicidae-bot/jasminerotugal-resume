@@ -60,14 +60,16 @@ function CertificateDialog({ certificate, dialogRef, closeRef, onClose }) {
             <dd>{content.ui.statusLabels[deriveCertificateStatus(certificate)]}</dd>
           </dl>
           <div className="dialog-document">
-            {certificate.publicFile ? (
-              certificate.publicFile.mimeType === 'application/pdf' ? (
-                <a className="button button-secondary" href={certificate.publicFile.src} target="_blank" rel="noopener noreferrer">
-                  Open certificate PDF
-                </a>
-              ) : (
-                <ImageSlot image={certificate.publicFile} kind="certificate" />
-              )
+            {certificate.publicFile?.mimeType === 'application/pdf' && isSafeHttpsUrl(certificate.publicFile.src) ? (
+              <a className="button button-secondary" href={certificate.publicFile.src} target="_blank" rel="noopener noreferrer">
+                Open certificate PDF
+              </a>
+            ) : certificate.publicFile?.mimeType?.startsWith('image/') ? (
+              <ImageSlot image={certificate.publicFile} kind="certificate" />
+            ) : certificate.publicFile && isSafeHttpsUrl(certificate.publicFile.src) ? (
+              <a className="button button-secondary" href={certificate.publicFile.src} target="_blank" rel="noopener noreferrer">
+                Open attached document
+              </a>
             ) : (
               <p className="asset-note">{content.ui.noDocument}</p>
             )}

@@ -887,10 +887,10 @@ export default function AdminDashboard({ onLogout }) {
     section_spacing: design.sectionSpacing || defaultDesign.sectionSpacing,
     section_padding: design.padding || 88,
     hero_variant: design.heroVariant || defaultDesign.heroVariant,
-    background_color: design.palette?.background || presets[design.activePreset]?.colors.bg || '#0B1120',
-    surface_color: design.palette?.surface || presets[design.activePreset]?.colors.surface || '#121A2E',
+    background_color: design.palette?.background || presets[design.activePreset]?.colors.bg || '#0E1116',
+    surface_color: design.palette?.surface || presets[design.activePreset]?.colors.surface || '#161C24',
     primary_color: design.palette?.primary || presets[design.activePreset]?.colors.primary || '#9B83F5',
-    text_color: design.palette?.text || presets[design.activePreset]?.colors.text || '#E6EAF4',
+    text_color: design.palette?.text || presets[design.activePreset]?.colors.text || '#E8EEF5',
     font_url: design.fontUrl || '',
     section_visibility: { ...defaultDesign.sectionVisibility, ...(design.sectionVisibility || {}) },
     skills_layout: design.skillsLayout || defaultDesign.skillsLayout,
@@ -907,7 +907,7 @@ export default function AdminDashboard({ onLogout }) {
   const [needsAssetCleanup, setNeedsAssetCleanup] = useState(false);
   const [cleanupPaths, setCleanupPaths] = useState([]);
 
-  const preset = useMemo(() => presets[designDraft.theme_mode] || presets['midnight'], [designDraft.theme_mode]);
+  const preset = useMemo(() => presets[designDraft.theme_mode] || presets['graphite-violet'], [designDraft.theme_mode]);
   const hasUncommittedRecordEdit = Object.values(openRecordEditors).some(Boolean);
   const reportRecordEditing = useCallback((path, isOpen) => {
     setOpenRecordEditors((current) => ({ ...current, [path]: isOpen }));
@@ -1224,7 +1224,7 @@ export default function AdminDashboard({ onLogout }) {
   };
 
   return (
-    <main className="admin-dashboard admin-shell">
+    <main id="main" tabIndex="-1" className="admin-dashboard admin-shell">
       <aside className="admin-sidebar">
         <div className="admin-sidebar-brand">
           <p className="admin-kicker">Private area</p>
@@ -1295,7 +1295,7 @@ export default function AdminDashboard({ onLogout }) {
           </div>
           <div className="admin-stat-grid">
             <OverviewStat label="Projects" value={stats.projects} detail="published after next release" />
-            <OverviewStat label="Certificates" value={stats.certificates} detail="verified records" />
+            <OverviewStat label="Certificates" value={stats.certificates} detail="credential records" />
             <OverviewStat label="Achievements" value={stats.achievements} detail="awards & recognitions" />
             <OverviewStat label="Skills" value={stats.skills} detail="across all categories" />
             <OverviewStat label="Education entries" value={stats.education} detail="tertiary / secondary / elementary" />

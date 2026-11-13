@@ -49,3 +49,21 @@ test('empty base content still produces safe generic metadata', () => {
   assert.equal(resolveSeo(content, 'certificates').title, 'Certificates');
   assert.equal(resolveSeo(content, 'not-found').title, 'Page not found');
 });
+
+
+import { resolveCanonicalUrl } from './seo.js';
+
+test('canonical URL uses only a valid configured HTTPS origin and public path', () => {
+  assert.equal(
+    resolveCanonicalUrl('https://portfolio.example', '/certificates?cert=123'),
+    'https://portfolio.example/certificates',
+  );
+  assert.equal(resolveCanonicalUrl('https://portfolio.example/', '/'), 'https://portfolio.example/');
+});
+
+test('canonical URL is omitted for missing, non-HTTPS, or non-origin configuration', () => {
+  assert.equal(resolveCanonicalUrl('', '/'), null);
+  assert.equal(resolveCanonicalUrl('http://portfolio.example', '/'), null);
+  assert.equal(resolveCanonicalUrl('https://portfolio.example/path', '/'), null);
+  assert.equal(resolveCanonicalUrl('https://user:pass@portfolio.example', '/'), null);
+});

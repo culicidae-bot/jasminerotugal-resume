@@ -9,9 +9,7 @@ function hasHeroContent(content) {
   const hero = content?.hero;
   if (!hero) return false;
   return (
-    ['eyebrow', 'name', 'title', 'focus'].some((key) => hasText(hero[key])) ||
-    isSafeImagePath(hero.portrait?.src) ||
-    isSafeImagePath(hero.cover?.src)
+    ['eyebrow', 'name', 'title', 'focus'].some((key) => hasText(hero[key]))
   );
 }
 
@@ -77,14 +75,13 @@ const INCOMPLETE_ELIGIBILITY_STATUSES = new Set([
 ]);
 
 /**
- * Eligibility records are shown as attained only when they are not marked
- * as planned or in progress. Legacy records without a status are treated as
- * completed so existing published content is not silently hidden.
+ * Only explicitly completed eligibility records are presented as attained.
+ * Missing, planned, pending, and in-progress statuses remain hidden.
  */
 export function isPublicEligibility(record) {
   if (!hasText(record?.title)) return false;
   const status = typeof record?.status === 'string' ? record.status.trim().toLowerCase() : '';
-  return !INCOMPLETE_ELIGIBILITY_STATUSES.has(status);
+  return status === 'completed';
 }
 
 export function isPublicExperience(item) {

@@ -242,27 +242,16 @@ export default function AdminAuthPage() {
 
   if (mode === 'dashboard') return <AdminDashboard onLogout={logout} />;
   if (mode === 'checking') {
-    return <main className="admin-auth"><p role="status">Checking admin session…</p></main>;
+    return <main id="main" tabIndex="-1" className="admin-auth"><p role="status">Checking admin session…</p></main>;
   }
   if (mode === 'unavailable') {
     return (
-      <main className="admin-auth">
+      <main id="main" tabIndex="-1" className="admin-auth">
         <section className="admin-card" aria-labelledby="admin-title">
-          <p className="admin-kicker">Setup required</p>
-          <h1 id="admin-title">Admin is not connected</h1>
+          <p className="admin-kicker">ADMINISTRATOR ACCESS</p>
+          <h1 id="admin-title">Admin access is temporarily unavailable.</h1>
           <p role="alert">
-            {configIssue ??
-              'The portfolio service is not available in this build.'}
-          </p>
-          <p>
-            This build is missing its connection settings. Configure{' '}
-            <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> for the exact
-            environment being viewed, then rebuild or redeploy. Confirm you are viewing the latest
-            build and check the deployment logs.
-          </p>
-          <p>
-            Never put a service-role key in the browser. If the values are set, confirm they are set
-            for this environment (Production vs Preview) and redeploy.
+            Please try again later. If the problem continues, contact the site administrator.
           </p>
         </section>
       </main>
@@ -270,7 +259,7 @@ export default function AdminAuthPage() {
   }
 
   return (
-    <main className="admin-auth">
+    <main id="main" tabIndex="-1" className="admin-auth">
       <section className="admin-card" aria-labelledby="admin-title">
         <p className="admin-kicker">ADMINISTRATOR ACCESS</p>
         <h1 id="admin-title">Welcome back.</h1>

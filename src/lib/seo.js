@@ -52,3 +52,29 @@ export function resolveSeo(content, page = 'home') {
       (name ? `Professional portfolio of ${name}.` : 'Professional portfolio.'),
   };
 }
+
+
+export function resolveCanonicalUrl(siteOrigin, pathname = '/') {
+  if (typeof siteOrigin !== 'string' || !siteOrigin.trim()) return null;
+
+  try {
+    const origin = new URL(siteOrigin.trim());
+    if (
+      origin.protocol !== 'https:' ||
+      origin.username ||
+      origin.password ||
+      origin.pathname !== '/' ||
+      origin.search ||
+      origin.hash
+    ) {
+      return null;
+    }
+
+    const path = typeof pathname === 'string' && pathname.startsWith('/') && !pathname.startsWith('//')
+      ? pathname.split(/[?#]/, 1)[0] || '/'
+      : '/';
+    return new URL(path, origin.origin).href;
+  } catch {
+    return null;
+  }
+}
