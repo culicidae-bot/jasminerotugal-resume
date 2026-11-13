@@ -113,7 +113,7 @@ export function hasPublicSectionContent(id, content) {
     return Array.isArray(content.skills) && content.skills.some((item) => hasText(item?.name));
   }
   if (id === 'certificates') {
-    return Array.isArray(content.certificates) && content.certificates.some(isPublicCertificate);
+    return ((Array.isArray(content.certificates) && content.certificates.some(isPublicCertificate)) || (Array.isArray(content.eligibility) && content.eligibility.some(isPublicEligibility)));
   }
   if (id === 'eligibility') {
     return Array.isArray(content.eligibility) && content.eligibility.some(isPublicEligibility);
