@@ -2,21 +2,27 @@ import Section from '../components/Section.jsx';
 import { CertificateStatus, CertificateType } from '../components/CertificateSignals.jsx';
 import { formatDate } from '../lib/format.js';
 import { sortByPriority } from '../lib/prioritize.js';
-import { isPublicCertificate } from '../lib/public-sections.js';
+import { isPublicCertificate, isPublicEligibility } from '../lib/public-sections.js';
 import { isSafeHttpsUrl } from '../lib/urls.js';
 import { useSite } from '../lib/site-context.js';
 
 export default function CertificatesSection({ index }) {
   const { content } = useSite();
   const section = content.sections.certificates;
-  const records = sortByPriority((content.certificates || []).filter(isPublicCertificate));
+  const certificateRecords = (content.certificates || []).filter(isPublicCertificate);
+  const eligibilityRecords = (content.eligibility || []).filter(isPublicEligibility).map((record) => ({
+    ...record,
+    type: 'Eligibility',
+    dateEarned: record.dateConferred || '',
+  }));
+  const records = sortByPriority([...certificateRecords, ...eligibilityRecords]);
 
   return (
     <Section
       id="certificates"
       label={section.label}
       title="Certifications & Achievements"
-      intro="Selected credentials, training, and recognitions."
+      intro="Selected certifications, eligibility, training, and recognitions."
       index={index}
     >
       <ul className="portfolio-credentials">
@@ -32,7 +38,7 @@ export default function CertificatesSection({ index }) {
                   <CertificateStatus certificate={record} />
                 </div>
                 <h3>{record.title}</h3>
-                <p className="certificate-issuer">{record.issuer}</p>
+                <p className="certificate-issuer">{record.issuer || "Issuing organization not provided"}</p>
               </div>
               <div className="portfolio-credential-actions">
                 {date ? <time dateTime={record.dateEarned}>{date}</time> : null}
